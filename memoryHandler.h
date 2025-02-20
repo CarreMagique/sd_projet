@@ -2,6 +2,7 @@
 #define MEMORYH
 #include "hashmap.h"
 #include <stdlib.h>
+#include <stdio.h>
 
 typedef struct segment {
     int start ; // Position de debut (adresse) du segment dans la memoire
