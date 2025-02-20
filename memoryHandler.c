@@ -20,22 +20,26 @@ Segment *find_free_segment(MemoryHandler* handler, int start, int size, Segment*
     if(seg==NULL) {
         return NULL;
     }
-    if(seg->start<=start && seg->start+seg->size>=start+size) {
+    if(seg->start<=start && seg->start+seg->size >= start+size) {
         *prev=NULL;
         return seg;
     }
     while(seg->next) {
-        if(seg->next->start<=start && seg->next->start+seg->next->size>=start+size) {
+        if(seg->next->start<=start && seg->next->start+seg->next->size >= start+size) {
             *prev=seg;
             return seg->next;
         }
         seg=seg->next;
     }
+
     *prev=NULL;
     return NULL;
 }
 
 int create_segment(MemoryHandler *handler, const char *name, int start, int size) {
+    if(start+size>handler->total_size) { //Dans ce cas le segment est trop large pour etre cree
+        return 1;
+    }
     Segment *prev=NULL;
     Segment* seg=find_free_segment(handler,start,size,&prev);
     if(seg==NULL) {
@@ -45,14 +49,18 @@ int create_segment(MemoryHandler *handler, const char *name, int start, int size
 
     new_seg->size=size;
     new_seg->start=start;
-    hashmap_insert(handler->allocated, name, new_seg);
+    new_seg->next=NULL;
+    if(hashmap_insert(handler->allocated, name, new_seg)==3) {
+        return 1;
+    }
     Segment *seg1=NULL;
     Segment *seg2=NULL;
 
+/*On cree un segment si le segment seg ne debute pas a la meme adresse que start*/
     if(seg->start!=start){
         seg1=(Segment *)malloc(sizeof(Segment));
-        seg1->start=seg->start;
-        seg1->size=start; 
+        seg1->start=seg->start; //Meme debut que seg
+        seg1->size=start-seg->start; //La taille est la "longueur" entre le debut de seg et start
         if(prev!=NULL){
             prev->next = seg1;
             prev=prev->next;
@@ -62,10 +70,11 @@ int create_segment(MemoryHandler *handler, const char *name, int start, int size
         }
     }
 
+/*On cree un segment si le segment seg ne termine pas a la meme adresse que start+size*/
     if(start+size!=seg->start+seg->size){
         seg2=(Segment *)malloc(sizeof(Segment));
-        seg2->start=start+size;
-        seg2->size=seg->start + seg->size - seg2->start;
+        seg2->start=start+size; //seg2 commence a la fin du segment alloue
+        seg2->size=seg->start + seg->size - seg2->start; //La taille de seg2 est la "longueur" entre la fin du segment alloue et la fin de seg
         if(prev) {
             prev->next=seg2;
             prev=prev->next;
@@ -75,6 +84,7 @@ int create_segment(MemoryHandler *handler, const char *name, int start, int size
         }
     }
 
+/*On essaie d'ajouter la suite de la liste dans l'ordre des segments : seg2, seg1, debut de free_list*/
     if(seg2) {
         seg2->next=seg->next;
     } else if(seg1) {
@@ -88,7 +98,7 @@ int create_segment(MemoryHandler *handler, const char *name, int start, int size
 }
 
 int remove_segment(MemoryHandler *handler, const char *name) {
-    Segment* seg = hashmap_get(name);
-    hashmap_remove(name);
+    Segment* seg =(Segment *)hashmap_get(handler->allocated,name);
+    hashmap_remove(handler->allocated,name);
     return 0;
 }
