@@ -3,3 +3,4 @@ main_compare
 *.o
 *.exe
 *.ps
+settings.json
