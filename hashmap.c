@@ -51,12 +51,17 @@ int hashmap_remove(HashMap *map, const char *key){
     int i;
     for(i = simple_hash(key); i < map->size && strcmp(map->table[i].key, key) != 0; i++){}
     if(i!=map->size){
-        free(map->table[i].value);
+        free(map->table[i].key);
         map->table[i].value = TOMBSTONE;
         return 0;
     }
     return 1;
 }
 void hashmap_destroy(HashMap *map){
-
+    for (int i = 0; i < map->size; i++){
+        map->table[i].value = TOMBSTONE;
+        free(map->table[i].key)
+    }
+    free(map->table);
+    free(map);
 }

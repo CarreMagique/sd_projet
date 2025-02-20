@@ -20,12 +20,12 @@ Segment *find_free_segment(MemoryHandler* handler, int start, int size, Segment*
     if(seg==NULL) {
         return NULL;
     }
-    if(seg->start<=start && seg->size>=start+size) {
+    if(seg->start<=start && seg->start+seg->size>=start+size) {
         *prev=NULL;
         return seg;
     }
     while(seg->next) {
-        if(seg->next->start<=start && seg->next->size>=start+size) {
+        if(seg->next->start<=start && seg->next->start+seg->next->size>=start+size) {
             *prev=seg;
             return seg->next;
         }
@@ -36,17 +36,59 @@ Segment *find_free_segment(MemoryHandler* handler, int start, int size, Segment*
 }
 
 int create_segment(MemoryHandler *handler, const char *name, int start, int size) {
-    Segment* seg=find_free_segment(handler,start,size,&seg);
-    if(seg) {
-        Segment* new_seg=(Segment *)malloc(sizeof(Segment));
-        new_seg->size=size;
-        new_seg->start=start;
+    Segment *prev=NULL;
+    Segment* seg=find_free_segment(handler,start,size,&prev);
+    if(seg==NULL) {
+        return 1;
     }
-    //Ajouter à la table de hachage allocated avec la cle X
+    Segment* new_seg=(Segment *)malloc(sizeof(Segment));
+
+    new_seg->size=size;
+    new_seg->start=start;
+    hashmap_insert(handler->allocated, name, new_seg);
+    Segment *seg1=NULL;
+    Segment *seg2=NULL;
+
+    if(seg->start!=start){
+        seg1=(Segment *)malloc(sizeof(Segment));
+        seg1->start=seg->start;
+        seg1->size=start; 
+        if(prev!=NULL){
+            prev->next = seg1;
+            prev=prev->next;
+        }else{
+            handler->free_list = seg1;
+            prev=seg1;
+        }
+    }
+
+    if(start+size!=seg->start+seg->size){
+        seg2=(Segment *)malloc(sizeof(Segment));
+        seg2->start=start+size;
+        seg2->size=seg->start + seg->size - seg2->start;
+        if(prev) {
+            prev->next=seg2;
+            prev=prev->next;
+        } else {
+            handler->free_list=seg2;
+            prev=seg2;
+        }
+    }
+
+    if(seg2) {
+        seg2->next=seg->next;
+    } else if(seg1) {
+        seg1->next=seg->next;
+    } else {
+        handler->free_list=seg->next;
+    }
+    free(seg);
 
     return 0;
 }
 
 int remove_segment(MemoryHandler *handler, const char *name) {
+    Segment* seg = hashmap_get(name);
+    hashmap_remove(name);
     return 0;
 }
