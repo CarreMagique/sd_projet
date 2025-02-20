@@ -1,5 +1,5 @@
 #include "hashmap.h"
-
+#include <stdio.h>
 unsigned long simple_hash(const char *str){
     long c = 0;
     int i = 0;
@@ -23,16 +23,21 @@ HashMap *hashmap_create(){
 }
 int hashmap_insert(HashMap *map, const char *key, void *value){
     int k = simple_hash(key);
-    if(map->table[k].key==NULL){
-        map->table[k].key = strdup(key);
-        map->table[k].value = value;
-        return 0;
-    }
     int i;
-    for(i = k+1; i < map->size && map->table[i].key!=NULL; i++){}
+    for(i = k; i < map->size && map->table[i].key!=NULL && strcmp(map->table[i].key, key) != 0; i++){}
     if(i != map->size){
-        map->table[i].key = strdup(key);
-        map->table[i].value = value;
+        if(map->table[i].key==NULL){
+            map->table[i].key = strdup(key);
+            map->table[i].value = value;
+            return 0;
+        }
+        if(strcmp(map->table[i].key, key) ==0){
+            if(map->table[k].value == TOMBSTONE){
+                map->table[k].value = value;
+                return 0;
+            }
+            return 3;
+        }
         return 0;
     }
     return 1;
@@ -40,8 +45,9 @@ int hashmap_insert(HashMap *map, const char *key, void *value){
 
 void *hashmap_get(HashMap *map, const char *key){
     int i;
+    
     for(i = simple_hash(key); i < map->size && strcmp(map->table[i].key, key) != 0; i++){}
-    if(i != map->size ){
+    if(i != map->size && map->table[i].value != TOMBSTONE){
         return map->table[i].value;
     }
     return NULL;
@@ -51,7 +57,6 @@ int hashmap_remove(HashMap *map, const char *key){
     int i;
     for(i = simple_hash(key); i < map->size && strcmp(map->table[i].key, key) != 0; i++){}
     if(i!=map->size){
-        free(map->table[i].key);
         map->table[i].value = TOMBSTONE;
         return 0;
     }
@@ -60,7 +65,7 @@ int hashmap_remove(HashMap *map, const char *key){
 void hashmap_destroy(HashMap *map){
     for (int i = 0; i < map->size; i++){
         map->table[i].value = TOMBSTONE;
-        free(map->table[i].key)
+        free(map->table[i].key);
     }
     free(map->table);
     free(map);

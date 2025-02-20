@@ -1,5 +1,9 @@
 all : main
 
+main_hashmap: hashmap.o main_hashmap.c
+	gcc -Wall -c main_hashmap.c -ggdb -o main_hashmap.o
+	gcc -Wall hashmap.o main_hashmap.o -ggdb -o main_hashmap
+
 main : hashmap.o main.c
 	gcc -Wall -c main.c -ggdb -o main.o
 	gcc -Wall hashmap.o main.o -ggdb -o main
