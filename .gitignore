@@ -1,5 +1,4 @@
-main
-main_compare
+main*
 *.o
 *.exe
 *.ps
