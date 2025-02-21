@@ -1,9 +1,11 @@
 #ifndef HASHMAP
-#include <stdlib.h>
-#include <string.h>
 #define HASHMAP
 #define TOMBSTONE (( void *) -1)
 #define TABLE_SIZE 128
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <assert.h>
 
 typedef struct hashentry {
     char * key ;

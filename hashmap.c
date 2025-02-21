@@ -1,5 +1,5 @@
 #include "hashmap.h"
-#include <stdio.h>
+
 unsigned long simple_hash(const char *str){
     long c = 0;
     int i = 0;
@@ -13,8 +13,10 @@ unsigned long simple_hash(const char *str){
 }
 HashMap *hashmap_create(){
     HashMap* map = malloc(sizeof(HashMap));
+    assert(map);
     map->size = TABLE_SIZE;
     map->table = malloc(sizeof(HashEntry)*map->size);
+    assert(map->table);
     for(int i = 0; i < map->size; i++){
         map->table[i].value = NULL;
         map->table[i].key = NULL;
