@@ -1,8 +1,8 @@
 all : main
 
-tests : hashmap.o tests/tests.c
-	gcc -Wall -c tests/tests.c -ggdb -o tests.o
-	gcc -Wall tests.o hashmap.o -ggdb -o tests
+test : hashmap.o tests/tests.c
+	gcc -Wall -c tests/tests.c -ggdb -o tests/tests.o
+	gcc -Wall tests/tests.o hashmap.o -ggdb -o test
 main_hashmap: hashmap.o main_hashmap.c
 	gcc -Wall -c main_hashmap.c -ggdb -o main_hashmap.o
 	gcc -Wall hashmap.o main_hashmap.o -ggdb -o main_hashmap
