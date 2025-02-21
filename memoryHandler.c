@@ -3,10 +3,12 @@
 
 MemoryHandler *memory_init(int size) {
     MemoryHandler* mem = (MemoryHandler *)malloc(sizeof(MemoryHandler));
+    assert(mem);
     mem->total_size=size;
     mem->memory=malloc(sizeof(void *)*mem->total_size);
-    
+    assert(mem->memory);
     mem->free_list=(Segment *)malloc(sizeof(Segment));
+    assert(mem->free_list);
     mem->free_list->size=mem->total_size;
     mem->free_list->start=0;
     mem->free_list->next=NULL;
@@ -46,6 +48,7 @@ int create_segment(MemoryHandler *handler, const char *name, int start, int size
         return 1;
     }
     Segment* new_seg=(Segment *)malloc(sizeof(Segment));
+    assert(new_seg);
 
     new_seg->size=size;
     new_seg->start=start;
@@ -59,6 +62,7 @@ int create_segment(MemoryHandler *handler, const char *name, int start, int size
 /*On cree un segment si le segment seg ne debute pas a la meme adresse que start*/
     if(seg->start!=start){
         seg1=(Segment *)malloc(sizeof(Segment));
+        assert(seg1);
         seg1->start=seg->start; //Meme debut que seg
         seg1->size=start-seg->start; //La taille est la "longueur" entre le debut de seg et start
         if(prev!=NULL){
@@ -73,6 +77,7 @@ int create_segment(MemoryHandler *handler, const char *name, int start, int size
 /*On cree un segment si le segment seg ne termine pas a la meme adresse que start+size*/
     if(start+size!=seg->start+seg->size){
         seg2=(Segment *)malloc(sizeof(Segment));
+        assert(seg2);
         seg2->start=start+size; //seg2 commence a la fin du segment alloue
         seg2->size=seg->start + seg->size - seg2->start; //La taille de seg2 est la "longueur" entre la fin du segment alloue et la fin de seg
         if(prev) {
