@@ -2,8 +2,10 @@
 
 Instruction *parse_data_instruction(const char *line, HashMap *memory_locations, int data_count) {
     char* word=(char *)malloc(sizeof(char)*10);
+    assert(word);
     int i=0, j=0, count=0;
     Instruction *ins=(Instruction *)malloc(sizeof(Instruction));
+    assert(ins);
     /*Pas de stress, espace plaisir*/
     ins->mnemonic=NULL;
     ins->operand1=NULL;
@@ -36,6 +38,7 @@ Instruction *parse_data_instruction(const char *line, HashMap *memory_locations,
 Instruction *parse_code_instruction(const char *line, HashMap *labels, int code_count){
     char* word=(char *)malloc(sizeof(char)*10);
     Instruction *ins=(Instruction *)malloc(sizeof(Instruction));
+    assert(ins);
     /*Pas de stress, espace plaisir*/
     ins->mnemonic=NULL;
     ins->operand1=NULL;
@@ -76,8 +79,9 @@ Instruction *parse_code_instruction(const char *line, HashMap *labels, int code_
 
 Instruction** resize_tab(Instruction** tab, int size){
     Instruction** tmp = malloc(sizeof(Instruction*)*(size+1));
+    assert(tmp);
     for(int i = 0; i<size; i++){
-        *tmp[i] = *tab[i];
+        tmp[i] = tab[i];
     }
     free(tab);
     return tmp;
@@ -85,9 +89,11 @@ Instruction** resize_tab(Instruction** tab, int size){
 
 ParserResult *parse(const char *filename){
     FILE* file = fopen(filename, "r");
+    assert(file);
     char buffer[100];
     int endroit = -1;
     ParserResult* pr = malloc(sizeof(ParserResult));
+    assert(pr);
     pr->data_count = 0;
     pr->code_count = 0;
     pr->data_instructions = NULL;
@@ -96,20 +102,20 @@ ParserResult *parse(const char *filename){
     pr->labels = hashmap_create();
 
     while(fgets(buffer, 100, file)){
-        if(strcmp(buffer, ".DATA") == 0){
+        if(strcmp(buffer, ".DATA\n") == 0){
             endroit = 0;
         }
-        else if(strcmp(buffer, ".CODE") == 0){
+        else if(strcmp(buffer, ".CODE\n") == 0){
             endroit = 1;
         }else{
             switch(endroit){
                 case 0:
-                    pr->data_count++;
                     pr->data_instructions = resize_tab(pr->data_instructions,pr->data_count);
+                    pr->data_count++;
                     pr->data_instructions[pr->data_count-1] = parse_data_instruction(buffer,pr->memory_locations,pr->data_count);
                 case 1:
-                    pr->code_count++;
                     pr->code_instructions = resize_tab(pr->code_instructions,pr->code_count);
+                    pr->code_count++;
                     pr->code_instructions[pr->code_count-1] = parse_code_instruction(buffer,pr->labels, pr->code_count);
             }
         }

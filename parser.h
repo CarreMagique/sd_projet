@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <assert.h>
 
 typedef struct {
     char * mnemonic ; // Instruction mnemonic (ou nom de variable pour .DATA)
