@@ -7,6 +7,10 @@ main_hashmap: hashmap.o main_hashmap.c
 	gcc -Wall -c main_hashmap.c -ggdb -o main_hashmap.o
 	gcc -Wall hashmap.o main_hashmap.o -ggdb -o main_hashmap
 
+main_parser: parser.o main_parser.c
+	gcc -Wall -c main_parser.c -ggdb -o main_parser.o
+	gcc -Wall hashmap.o parser.o main_parser.o -ggdb -o main_parser
+
 main : hashmap.o main.c
 	gcc -Wall -c main.c -ggdb -o main.o
 	gcc -Wall hashmap.o main.o -ggdb -o main
@@ -15,10 +19,14 @@ main2 : hashmap.o memoryHandler.o main2.c
 	gcc -Wall -c main2.c -ggdb -o main2.o
 	gcc -Wall hashmap.o memoryHandler.o main2.o -ggdb -o main2
 
+parser.o: hashmap.o parser.c parser.h
+	gcc -Wall -c parser.c -ggdb -o parser.o
+
 memoryHandler.o : hashmap.o memoryHandler.c memoryHandler.h
-	gcc -Wall -c memoryHandler.c -ggdb memoryHandler.o
+	gcc -Wall -c memoryHandler.c -ggdb -o memoryHandler.o
 
 hashmap.o : hashmap.c hashmap.h
 	gcc -Wall -c hashmap.c -ggdb -o hashmap.o
+
 clean:
 	rm -rf *.o main

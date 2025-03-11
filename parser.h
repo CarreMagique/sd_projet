@@ -3,6 +3,7 @@
 #include "hashmap.h"
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 typedef struct {
     char * mnemonic ; // Instruction mnemonic (ou nom de variable pour .DATA)
@@ -19,5 +20,8 @@ typedef struct {
     HashMap * memory_locations ; // noms de variables -> adresse memoire
 } ParserResult;
 
-Instruction *parse_data_instruction(const char *line, HashMap *memory locations);
+Instruction *parse_data_instruction(const char *line, HashMap *memory_locations, int data_count);
+Instruction *parse_code_instruction(const char *line, HashMap *labels, int code_count);
+ParserResult *parse(const char *filename);
+void free_parser_result(ParserResult *result);
 #endif
