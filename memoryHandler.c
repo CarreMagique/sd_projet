@@ -103,7 +103,6 @@ int create_segment(MemoryHandler *handler, const char *name, int start, int size
 }
 
 int remove_segment(MemoryHandler *handler, const char *name) {
-    Segment* seg =(Segment *)hashmap_get(handler->allocated,name);
     hashmap_remove(handler->allocated,name);
     return 0;
 }
