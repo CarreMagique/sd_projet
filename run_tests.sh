@@ -1,3 +1,4 @@
 make tests
-./main_memoryHandler
-./main_parser
+./test_hashmap
+./test_memoryHandler
+./test_parser
