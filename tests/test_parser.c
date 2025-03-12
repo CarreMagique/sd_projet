@@ -1,10 +1,10 @@
-#include "parser.h"
+#include "../parser.h"
 #include <assert.h>
 #include <string.h>
 #include <stdio.h>
 
 int main() {
-    ParserResult* parser = parse("test_parser.txt");
+    ParserResult* parser = parse("tests/test_parser.txt");
     
     assert(strcmp(parser->data_instructions[0]->mnemonic,"x")==0);
     assert(strcmp(parser->data_instructions[0]->operand1,"DW")==0);

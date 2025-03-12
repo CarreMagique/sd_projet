@@ -1,5 +1,5 @@
-#include "hashmap.h"
-#include "memoryHandler.h"
+#include "../hashmap.h"
+#include "../memoryHandler.h"
 #include <stdio.h>
 #include <assert.h>
 

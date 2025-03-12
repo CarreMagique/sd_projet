@@ -4,5 +4,6 @@
 .vscode
 main
 main_hashmap
-main_memoryHandler
-main_parser
+test_hashmap
+test_memoryHandler
+test_parser
