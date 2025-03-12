@@ -1,10 +1,11 @@
 #include "hashmap.h"
 #include "memoryHandler.h"
 #include <stdio.h>
+#include <assert.h>
 
 int main(){
     MemoryHandler *memo = memory_init(1000);
-    Segment *border1, *border2, *border3, *s2=NULL, *parcours;
+    Segment *border1, *border2, *border3, *parcours;
     border1=(Segment *)malloc(sizeof(Segment));
     border1->next=NULL;
     border1->size=100;
@@ -25,16 +26,11 @@ int main(){
     create_segment(memo,"border2", border2->start, border2->size);
     create_segment(memo,"border3", border3->start, border3->size);
     
-    s2=hashmap_get(memo->allocated, "border2");
-    if(s2) {
-
-    }
-    printf("%d %d\n", s2->start, s2->size);
-
     parcours=memo->free_list;
-    while(parcours) {
-        printf("%d %d\n", parcours->start, parcours->start+parcours->size);
-        parcours=parcours->next;
-    }
+    assert(parcours->start==border1->start+border1->size);
+    assert(parcours->start+parcours->size==border3->start);
+    parcours=parcours->next;
+    assert(parcours->start==border3->start+border3->size);
+    assert(parcours->start+parcours->size==border2->start);
     return 0;
 }

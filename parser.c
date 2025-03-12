@@ -12,24 +12,34 @@ Instruction *parse_data_instruction(const char *line, HashMap *memory_locations,
     ins->operand2=NULL;
 
     while(line[i]) {
-        if(line[i]==' ') {
-            switch(count) {
-                case 0:
-                    ins->mnemonic=strdup(word);
-                    hashmap_insert(memory_locations,ins->mnemonic,(void*)&data_count);
-                case 1:
-                    ins->operand1=strdup(word);
-                case 2:
-                    ins->operand2=strdup(word);
-                    break;
+        if(line[i]!=' ' && line[i]!='\n') {
+            word[j]=line[i];
+            j++;
+        }else if(line[i]=='\n') {
+            word[j]='\0';
+            ins->operand2=strdup(word);
+            free(word);
+            break;
+        } else {
+            if(count==0) {
+                word[j]='\0';
+                ins->mnemonic=strdup(word);
+                hashmap_insert(memory_locations,ins->mnemonic,(void*)&data_count);
+                free(word);
+                word=(char *)malloc(sizeof(char)*10);
+                j=0;
+            } else if(count==1) {
+                word[j]='\0';
+                ins->operand1=strdup(word);
+                free(word);
+                word=(char *)malloc(sizeof(char)*10);
+                j=0;
+            } else {
+                word[j]=line[i];
+                j++;
             }
             count++;
-            free(word);
-            word=(char *)malloc(sizeof(char)*10);
-            j=0;
         }
-        word[j]=line[i];
-        j++;
         i++;
     }
     return ins;
@@ -37,50 +47,65 @@ Instruction *parse_data_instruction(const char *line, HashMap *memory_locations,
 
 Instruction *parse_code_instruction(const char *line, HashMap *labels, int code_count){
     char* word=(char *)malloc(sizeof(char)*10);
+    int i=0, j=0, count=0;
     Instruction *ins=(Instruction *)malloc(sizeof(Instruction));
     assert(ins);
     /*Pas de stress, espace plaisir*/
     ins->mnemonic=NULL;
     ins->operand1=NULL;
     ins->operand2=NULL;
-    int i=0, j=0, count=0;
+
     while(line[i]) {
-        if(line[i]==' ' || line[i] == ',') {
-            switch(count) {
-                case 0:
-                    if(word[j-1] == ':'){
-                        word[j-1] = '\0';
-                        count = -1;
-                        hashmap_insert(labels,strdup(word),(void*)&code_count);
-                    }else{
-                        ins->mnemonic=strdup(word);
-                    }
-                case 1:
-                    ins->operand1=strdup(word);
-                case 2:
-                    ins->operand2=strdup(word);
-                    break;
+        if(line[i]!=' ' && line[i] != ',' && line[i]!='\n') {
+            word[j]=line[i];
+            j++;
+        }else if(line[i]=='\n') {
+            word[j]='\0';
+            ins->operand2=strdup(word);
+            free(word);
+            break;
+        } else {
+            if(count==0) {
+                if(word[j-1] == ':'){
+                    word[j-1] = '\0';
+                    hashmap_insert(labels,strdup(word),(void*)&code_count);
+                    count--;
+                }else{
+                    word[j]='\0';
+                    ins->mnemonic=strdup(word);
+                }
+                free(word);
+                word=(char *)malloc(sizeof(char)*10);
+                j=0;
+            } else if(count==1) {
+                word[j]='\0';
+                ins->operand1=strdup(word);
+                free(word);
+                word=(char *)malloc(sizeof(char)*10);
+                j=0;
             }
             count++;
-            free(word);
-            word=(char *)malloc(sizeof(char)*10);
-            j=0;
         }
-        word[j]=line[i];
-        j++;
         i++;
     }
-    if(ins->operand2==NULL){
-        ins->operand2 = strdup("");
+
+    if(line[i]=='\0') {
+        word[j]='\0';
+        if(count==1) {
+            ins->operand1=strdup(word);
+        } else {   
+            ins->operand2=strdup(word);
+        }
+        free(word);
     }
     return ins;
-
 }
 
-Instruction** resize_tab(Instruction** tab, int size){
-    Instruction** tmp = malloc(sizeof(Instruction*)*(size+1));
+Instruction** resize_tab(Instruction** tab, int* size){
+    (*size)++;
+    Instruction** tmp = malloc(sizeof(Instruction*)*(*size));
     assert(tmp);
-    for(int i = 0; i<size; i++){
+    for(int i = 0; i<*size-1; i++){
         tmp[i] = tab[i];
     }
     free(tab);
@@ -108,15 +133,12 @@ ParserResult *parse(const char *filename){
         else if(strcmp(buffer, ".CODE\n") == 0){
             endroit = 1;
         }else{
-            switch(endroit){
-                case 0:
-                    pr->data_instructions = resize_tab(pr->data_instructions,pr->data_count);
-                    pr->data_count++;
-                    pr->data_instructions[pr->data_count-1] = parse_data_instruction(buffer,pr->memory_locations,pr->data_count);
-                case 1:
-                    pr->code_instructions = resize_tab(pr->code_instructions,pr->code_count);
-                    pr->code_count++;
-                    pr->code_instructions[pr->code_count-1] = parse_code_instruction(buffer,pr->labels, pr->code_count);
+            if(endroit==0) {
+                pr->data_instructions = resize_tab(pr->data_instructions,&pr->data_count);
+                pr->data_instructions[pr->data_count-1] = parse_data_instruction(buffer,pr->memory_locations,pr->data_count);
+            } else if(endroit==1) {
+                pr->code_instructions = resize_tab(pr->code_instructions,&pr->code_count);
+                pr->code_instructions[pr->code_count-1] = parse_code_instruction(buffer,pr->labels, pr->code_count);
             }
         }
     }
