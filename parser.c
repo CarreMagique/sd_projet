@@ -1,5 +1,5 @@
 #include "parser.h"
-
+int var_count;
 Instruction *parse_data_instruction(const char *line, HashMap *memory_locations, int data_count) {
     char* word=(char *)malloc(sizeof(char)*10);
     assert(word);
@@ -24,7 +24,9 @@ Instruction *parse_data_instruction(const char *line, HashMap *memory_locations,
             if(count==0) {
                 word[j]='\0';
                 ins->mnemonic=strdup(word);
-                hashmap_insert(memory_locations,ins->mnemonic,(void*)&data_count);
+                int* d =malloc(sizeof(int));
+                *d = data_count+var_count;
+                hashmap_insert(memory_locations,ins->mnemonic,d);
                 free(word);
                 word=(char *)malloc(sizeof(char)*10);
                 j=0;
@@ -39,6 +41,9 @@ Instruction *parse_data_instruction(const char *line, HashMap *memory_locations,
                 j++;
             }
             count++;
+        }
+        if(line[i] == ','){
+            var_count += 1;
         }
         i++;
     }
@@ -68,7 +73,9 @@ Instruction *parse_code_instruction(const char *line, HashMap *labels, int code_
             if(count==0) {
                 if(word[j-1] == ':'){
                     word[j-1] = '\0';
-                    hashmap_insert(labels,strdup(word),(void*)&code_count);
+                    int* d = malloc(sizeof(int));
+                    *d = code_count;
+                    hashmap_insert(labels,strdup(word),d);
                     count--;
                 }else{
                     word[j]='\0';
@@ -125,7 +132,7 @@ ParserResult *parse(const char *filename){
     pr->code_instructions = NULL;
     pr->memory_locations = hashmap_create();
     pr->labels = hashmap_create();
-
+    var_count = 0;
     while(fgets(buffer, 100, file)){
         if(strcmp(buffer, ".DATA\n") == 0){
             endroit = 0;
@@ -135,10 +142,10 @@ ParserResult *parse(const char *filename){
         }else{
             if(endroit==0) {
                 pr->data_instructions = resize_tab(pr->data_instructions,&pr->data_count);
-                pr->data_instructions[pr->data_count-1] = parse_data_instruction(buffer,pr->memory_locations,pr->data_count);
+                pr->data_instructions[pr->data_count-1] = parse_data_instruction(buffer,pr->memory_locations, pr->data_count-1);
             } else if(endroit==1) {
                 pr->code_instructions = resize_tab(pr->code_instructions,&pr->code_count);
-                pr->code_instructions[pr->code_count-1] = parse_code_instruction(buffer,pr->labels, pr->code_count);
+                pr->code_instructions[pr->code_count-1] = parse_code_instruction(buffer,pr->labels, pr->code_count-1);
             }
         }
     }
@@ -147,6 +154,15 @@ ParserResult *parse(const char *filename){
 }
 
 void free_parser_result(ParserResult *result) {
+    for(int i = 0; i<result->data_count; i++){
+        free(hashmap_get(result->memory_locations, result->data_instructions[i]->mnemonic));
+    } 
+    /* On attend le tips d'Anissa
+    for(int i = 0; i<result->code_count; i++){
+        printf("%d\n",i);
+        free(hashmap_get(result->labels, result->code_instructions[i]->mnemonic));
+    }
+    */
     hashmap_destroy(result->memory_locations);
     hashmap_destroy(result->labels);
     free(result->code_instructions);
