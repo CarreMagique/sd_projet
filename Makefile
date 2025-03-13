@@ -18,10 +18,6 @@ main : hashmap.o main.c
 	gcc -Wall -c main.c -ggdb -o main.o
 	gcc -Wall hashmap.o main.o -ggdb -o main
 
-main_hashmap: hashmap.o main_hashmap.c
-	gcc -Wall -c main_hashmap.c -ggdb -o main_hashmap.o
-	gcc -Wall hashmap.o main_hashmap.o -ggdb -o main_hashmap
-
 parser.o: hashmap.o parser.c parser.h
 	gcc -Wall -c parser.c -ggdb -o parser.o
 
