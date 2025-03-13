@@ -28,4 +28,4 @@ hashmap.o : hashmap.c hashmap.h
 	gcc -Wall -c hashmap.c -ggdb -o hashmap.o
 
 clean:
-	rm -rf *.o main main_hashmap test_hashmap test_memoryHandler test_parser
+	rm -rf *.o tests/*.o main main_hashmap test_hashmap test_memoryHandler test_parser
