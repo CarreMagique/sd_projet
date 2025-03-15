@@ -12,16 +12,20 @@ Instruction *parse_data_instruction(const char *line, HashMap *memory_locations,
     ins->operand2=NULL;
 
     while(line[i]) {
-        if(line[i]!=' ' && line[i]!='\n') {
+        if(line[i]!=' ' && line[i]!='\n') { //Si line verifie cela, alors le caractere fait partie d'un mot
             word[j]=line[i];
             j++;
-        }else if(line[i]=='\n') {
+        }else if(line[i]=='\n') { //On arrive a la fin de la ligne
             word[j]='\0';
-            ins->operand2=strdup(word);
+            if(count==1) {
+                ins->operand1=strdup(word);
+            } else if(count>=2) {
+                ins->operand2=strdup(word);
+            }
             free(word);
             break;
         } else {
-            if(count==0) {
+            if(count==0) { //Premier mot : mnemonic
                 word[j]='\0';
                 ins->mnemonic=strdup(word);
                 int* d =malloc(sizeof(int));
@@ -30,7 +34,7 @@ Instruction *parse_data_instruction(const char *line, HashMap *memory_locations,
                 free(word);
                 word=(char *)malloc(sizeof(char)*10);
                 j=0;
-            } else if(count==1) {
+            } else if(count==1) { //Deuxieme mot : operand1
                 word[j]='\0';
                 ins->operand1=strdup(word);
                 free(word);
@@ -61,22 +65,26 @@ Instruction *parse_code_instruction(const char *line, HashMap *labels, int code_
     ins->operand2=NULL;
 
     while(line[i]) {
-        if(line[i]!=' ' && line[i] != ',' && line[i]!='\n') {
+        if(line[i]!=' ' && line[i] != ',' && line[i]!='\n') { //Dans ce cas les virgules sont aussi a ignorer
             word[j]=line[i];
             j++;
         }else if(line[i]=='\n') {
             word[j]='\0';
-            ins->operand2=strdup(word);
+            if(count==1) {
+                ins->operand1=strdup(word);
+            } else if(count>=2) {
+                ins->operand2=strdup(word);
+            }
             free(word);
             break;
         } else {
             if(count==0) {
-                if(word[j-1] == ':'){
+                if(word[j-1] == ':'){ //Il s'agit alors du label de l'instruction
                     word[j-1] = '\0';
                     int* d = malloc(sizeof(int));
                     *d = code_count;
                     hashmap_insert(labels,strdup(word),d);
-                    count--;
+                    count--; //Ce mot n'est pas une instruction, on reinitialise donc le compteur
                 }else{
                     word[j]='\0';
                     ins->mnemonic=strdup(word);
