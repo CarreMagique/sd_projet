@@ -2,6 +2,9 @@
 #define CPUH
 #include "hashmap.h"
 #include "memoryHandler.h"
+#include <stdlib.h>
+#include <assert.h>
+
 typedef struct {
     MemoryHandler *memory_handler ; // Gestionnaire de memoire
     HashMap *context ; // Registres (AX, BX, CX, DX)
