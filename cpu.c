@@ -7,6 +7,7 @@ CPU *cpu_init(int memory_size) {
     assert(cpu);
     cpu->memory_handler=memory_init(memory_size);
     cpu->context=hashmap_create();
+    create_segment(cpu->memory_handler, "espace_plaisir", 0, 100);
     return cpu;
 }
 
@@ -28,10 +29,10 @@ void cpu_destroy(CPU *cpu) {
 void* load(MemoryHandler *handler, const char *segment_name, int pos){
     Segment* smg = hashmap_get(handler->allocated, segment_name);
     if(!smg){
-        return 1;
+        return NULL;
     }
     if(smg->size<pos){
-        return 2;
+        return TOMBSTONE;
     }
     void* data = handler->memory[smg->start+pos];
     return data;
