@@ -1,6 +1,10 @@
 all : main
 
-tests: test_hashmap test_parser test_memoryHandler
+tests: test_hashmap test_parser test_memoryHandler test_cpu
+
+test_cpu : cpu.o tests/test_cpu.c
+	gcc -Wall -c tests/test_cpu.c -ggdb -o tests/test_cpu.o
+	gcc -Wall tests/test_cpu.o cpu.o -ggdb -o test_cpu
 
 test_hashmap : hashmap.o tests/test_hashmap.c
 	gcc -Wall -c tests/test_hashmap.c -ggdb -o tests/test_hashmap.o
@@ -26,6 +30,9 @@ memoryHandler.o : hashmap.o memoryHandler.c memoryHandler.h
 
 hashmap.o : hashmap.c hashmap.h
 	gcc -Wall -c hashmap.c -ggdb -o hashmap.o
+
+cpu.o : cpu.c cpu.h memoryHandler.o hashmap.o
+	gcc -Wall -c cpu.c -ggdb -o cpu.o
 
 clean:
 	rm -rf *.o tests/*.o main main_hashmap test_hashmap test_memoryHandler test_parser
