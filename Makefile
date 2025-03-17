@@ -35,4 +35,4 @@ cpu.o : cpu.c cpu.h memoryHandler.o hashmap.o
 	gcc -Wall -c cpu.c -ggdb -o cpu.o
 
 clean:
-	rm -rf *.o tests/*.o main main_hashmap test_hashmap test_memoryHandler test_parser
+	rm -rf *.o tests/*.o main main_hashmap test_hashmap test_memoryHandler test_parser test_cpu

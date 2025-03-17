@@ -7,6 +7,19 @@ CPU *cpu_init(int memory_size) {
     assert(cpu);
     cpu->memory_handler=memory_init(memory_size);
     cpu->context=hashmap_create();
+    int* a=malloc(sizeof(int));
+    *a=0;
+    hashmap_insert(cpu->context, "AX", a);
+    int* b=malloc(sizeof(int));
+    *b=0;
+    hashmap_insert(cpu->context, "BX", b);
+    int* c=malloc(sizeof(int));
+    *c=0;
+    hashmap_insert(cpu->context, "CX", c);
+    int* d=malloc(sizeof(int));
+    *d=0;
+    hashmap_insert(cpu->context, "DX", d);
+    
     create_segment(cpu->memory_handler, "espace_plaisir", 0, 100);
     return cpu;
 }
