@@ -25,3 +25,15 @@ void cpu_destroy(CPU *cpu) {
     free(cpu);
 }
 
+void* load(MemoryHandler *handler, const char *segment_name, int pos){
+    Segment* smg = hashmap_get(handler->allocated, segment_name);
+    if(!smg){
+        return 1;
+    }
+    if(smg->start+smg->size<=smg->start+pos){
+        return 2;
+    }
+    void* data = handler->memory[smg->start+pos];
+    return data;
+}
+
