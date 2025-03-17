@@ -25,3 +25,20 @@ void cpu_destroy(CPU *cpu) {
     free(cpu);
 }
 
+void* store(MemoryHandler *handler, const char *segment_name,int pos, void *data) {
+    Segment *seg = hashmap_get(handler->allocated, segment_name);
+    if(seg==NULL) {return NULL;}
+    if(pos>seg->size) {return NULL;}
+
+    handler->memory[pos+seg->start]=data;
+
+    return data;
+}
+
+void print_data_segment(CPU *cpu) {
+    Segment *DS = hashmap_get(cpu->memory_handler->allocated, "DS");
+    for(int i=DS->start; i <DS->start+DS->size; i++) {
+        printf("%d\t",* (int *)(cpu->memory_handler->memory[i]));
+    }
+    printf("\n");
+}

@@ -4,6 +4,7 @@
 #include "memoryHandler.h"
 #include <stdlib.h>
 #include <assert.h>
+#include <stdio.h>
 
 typedef struct {
     MemoryHandler *memory_handler ; // Gestionnaire de memoire
