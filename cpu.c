@@ -72,7 +72,7 @@ void allocate_variables(CPU *cpu, Instruction** data_instructions, int data_coun
                     size = size+1;
                 }
             }
-
+            size = size+1;
         }else{
             size = size+1;
         }
@@ -84,7 +84,6 @@ void allocate_variables(CPU *cpu, Instruction** data_instructions, int data_coun
         printf("Problème");
     }
     int c_m = start;
-
     for(int i=0; i<data_count; i++) {
         ins=data_instructions[i];
         //On modifiera ça après
@@ -110,7 +109,6 @@ void allocate_variables(CPU *cpu, Instruction** data_instructions, int data_coun
             int* p = malloc(sizeof(int));
             *p= atoi(ins->operand2);
             cpu->memory_handler->memory[c_m] = (void*)p;
-            c_m = c_m+1;
             c_m = c_m+1;
         }
     }
