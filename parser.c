@@ -6,7 +6,7 @@ Instruction *parse_data_instruction(const char *line, HashMap *memory_locations,
     int i=0, j=0, count=0;
     Instruction *ins=(Instruction *)malloc(sizeof(Instruction));
     assert(ins);
-    /*Pas de stress, espace plaisir*/
+    
     ins->mnemonic=NULL;
     ins->operand1=NULL;
     ins->operand2=NULL;
@@ -59,7 +59,7 @@ Instruction *parse_code_instruction(const char *line, HashMap *labels, int code_
     int i=0, j=0, count=0;
     Instruction *ins=(Instruction *)malloc(sizeof(Instruction));
     assert(ins);
-    /*Pas de stress, espace plaisir*/
+
     ins->mnemonic=NULL;
     ins->operand1=NULL;
     ins->operand2=NULL;

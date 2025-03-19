@@ -4,7 +4,7 @@ tests: test_hashmap test_parser test_memoryHandler test_cpu
 
 test_cpu : cpu.o tests/test_cpu.c
 	gcc -Wall -c tests/test_cpu.c -ggdb -o tests/test_cpu.o
-	gcc -Wall tests/test_cpu.o cpu.o hashmap.o memoryHandler.o -ggdb -o test_cpu
+	gcc -Wall tests/test_cpu.o cpu.o parser.o hashmap.o memoryHandler.o -ggdb -o test_cpu
 
 test_hashmap : hashmap.o tests/test_hashmap.c
 	gcc -Wall -c tests/test_hashmap.c -ggdb -o tests/test_hashmap.o
