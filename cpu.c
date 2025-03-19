@@ -1,6 +1,6 @@
 #include "cpu.h"
-#include "hashmap.h"
 #include "memoryHandler.h"
+#include "parser.h"
 
 CPU *cpu_init(int memory_size) {
     CPU* cpu = (CPU *) malloc(sizeof(CPU));
@@ -20,7 +20,6 @@ CPU *cpu_init(int memory_size) {
     *d=0;
     hashmap_insert(cpu->context, "DX", d);
     
-    create_segment(cpu->memory_handler, "espace_plaisir", 0, 100);
     return cpu;
 }
 
@@ -59,6 +58,26 @@ void* store(MemoryHandler *handler, const char *segment_name,int pos, void *data
     handler->memory[pos+seg->start]=data;
 
     return data;
+}
+
+void allocate_variables(CPU *cpu, Instruction** data_instructions, int data_count) {
+    Instruction *ins;
+    int c = 0;
+    for(int i=0; i<data_count; i++) {
+        ins=data_instructions[i];
+        if(strcmp(ins->mnemonic,"arr")==0) {
+            int size = 0;
+            if(i==data_count-1){
+                size = data_count-c;
+            }
+            while(create_segment(cpu->memory_handler, ins->mnemonic, c, ?) != 0){
+                i = i+1;
+            }
+            int res =
+        } else {
+            create_segment(cpu->memory_handler, ins->mnemonic, ?, 1);
+        }
+    }
 }
 
 void print_data_segment(CPU *cpu) {
