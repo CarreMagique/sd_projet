@@ -31,6 +31,18 @@ void cpu_destroy(CPU *cpu) {
         parcours=parcours->next;
         free(temp);
     }
+    void *data=hashmap_get(cpu->context,"AX");
+    if(data) {free(data);}
+
+    data=hashmap_get(cpu->context,"BX");
+    if(data) {free(data);}
+
+    data=hashmap_get(cpu->context,"CX");
+    if(data) {free(data);}
+
+    data=hashmap_get(cpu->context,"DX");
+    if(data) {free(data);}
+
     free(cpu->memory_handler->memory);
     hashmap_destroy(cpu->memory_handler->allocated);
     free(cpu->memory_handler);
@@ -59,23 +71,19 @@ void* store(MemoryHandler *handler, const char *segment_name,int pos, void *data
 
     return data;
 }
-
+//Rajouter tests store
 void allocate_variables(CPU *cpu, Instruction** data_instructions, int data_count) {
     Instruction *ins;
     int size = 0;
     for(int i=0; i<data_count; i++) {
         ins=data_instructions[i];
         //ça c'est faux c'est juste que l'array s'appelle arr, enfaite il n'y aucun moyen de distinguer une array d'une variable classique, faudra demander à Anissa
-        if(strcmp(ins->mnemonic,"arr")==0) {
-            for(int j = 0; ins->operand2[j]!='\0'; j++){
-                if(ins->operand2[j] == ','){
-                    size = size+1;
-                }
+        for(int j = 0; ins->operand2[j]!='\0'; j++){
+            if(ins->operand2[j] == ','){
+                size = size+1;
             }
-            size = size+1;
-        }else{
-            size = size+1;
         }
+        size = size+1;
     }
     //On peut pas faire une seule boucle car il faut connaitre la taille du segment avant de l'initialiser
     int start = 0;
@@ -87,30 +95,23 @@ void allocate_variables(CPU *cpu, Instruction** data_instructions, int data_coun
     for(int i=0; i<data_count; i++) {
         ins=data_instructions[i];
         //On modifiera ça après
-        if(strcmp(ins->mnemonic,"arr")==0) {
-            char buffer[100];
-            int b = 0;
-            for(int j = 0; ins->operand2[j]!='\0'; j++){
-                buffer[b] = ins->operand2[j];
-                b = b +1;
-                if(ins->operand2[j] == ','){
-                    int* p = malloc(sizeof(int));
-                    *p= atoi(buffer);
-                    cpu->memory_handler->memory[c_m] = (void*)p;
-                    c_m = c_m+1;
-                    b = 0;
-                }
+        char buffer[100];
+        int b = 0;
+        for(int j = 0; ins->operand2[j]!='\0'; j++){
+            buffer[b] = ins->operand2[j];
+            b = b +1;
+            if(ins->operand2[j] == ','){
+                int* p = malloc(sizeof(int));
+                *p= atoi(buffer);
+                store(cpu->memory_handler, "DS", c_m, (void*) p);
+                c_m = c_m+1;
+                b = 0;
             }
-            int* p = malloc(sizeof(int));
-            *p= atoi(buffer);
-            cpu->memory_handler->memory[c_m] = (void*)p;
-            c_m = c_m+1;
-        }else{
-            int* p = malloc(sizeof(int));
-            *p= atoi(ins->operand2);
-            cpu->memory_handler->memory[c_m] = (void*)p;
-            c_m = c_m+1;
         }
+        int* p = malloc(sizeof(int));
+        *p= atoi(buffer);
+        store(cpu->memory_handler, "DS", c_m, (void*) p);
+        c_m = c_m+1;
     }
 }
 
