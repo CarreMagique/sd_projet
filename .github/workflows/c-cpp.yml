@@ -1,4 +1,4 @@
-game: C/C++ CI
+name: C Jobs
 
 on:
   push:
