@@ -6,10 +6,12 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <stdio.h>
+#include <regex.h>
 
 typedef struct {
     MemoryHandler *memory_handler ; // Gestionnaire de memoire
     HashMap *context ; // Registres (AX, BX, CX, DX)
+    HashMap *constant_pool ; // Table de hachage pour stocker les valeurs immédiates
 } CPU;
 
 CPU *cpu_init(int memory_size);
@@ -18,4 +20,6 @@ void* store(MemoryHandler *handler, const char *segment_name,int pos, void *data
 void* load(MemoryHandler *handler, const char *segment_name,int pos);
 void allocate_variables(CPU *cpu, Instruction** data_instructions, int data_count);
 void print_data_segment(CPU *cpu);
+void *immediate_addressing(CPU *cpu, const char *operand);
+void *register_addressing(CPU *cpu, const char *operand);
 #endif

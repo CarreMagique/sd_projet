@@ -1,11 +1,11 @@
 #include "cpu.h"
-#include "memoryHandler.h"
-#include "parser.h"
+#include "hashmap.h"
 
 CPU *cpu_init(int memory_size) {
     CPU* cpu = (CPU *) malloc(sizeof(CPU));
     assert(cpu);
     cpu->memory_handler=memory_init(memory_size);
+    cpu->constant_pool=hashmap_create();
     cpu->context=hashmap_create();
     int* a=malloc(sizeof(int));
     *a=0;
@@ -47,6 +47,7 @@ void cpu_destroy(CPU *cpu) {
     hashmap_destroy(cpu->memory_handler->allocated);
     free(cpu->memory_handler);
     hashmap_destroy(cpu->context);
+    hashmap_destroy(cpu->constant_pool);
     free(cpu);
 }
 
@@ -121,4 +122,36 @@ void print_data_segment(CPU *cpu) {
         printf("%d\t",* (int *)(cpu->memory_handler->memory[i]));
     }
     printf("\n");
+}
+
+int matches(const char * pattern, const char * string) {
+    regex_t regex;
+    int result = regcomp(&regex, pattern, REG_EXTENDED);
+    if (result) {
+        fprintf(stderr, "Regex compilation failed for pattern %s\n" , pattern) ;
+        return 0;
+    }
+    result = regexec(&regex, string, 0, NULL, 0);
+    regfree(&regex);
+    return result == 0;
+}
+
+void *immediate_addressing(CPU *cpu, const char *operand) {
+    if(matches("^[0-9]*$",operand)) {
+        int *data=(int *)malloc(sizeof(int));
+        sscanf(operand, "%d", data);
+        if(hashmap_get(cpu->constant_pool, operand)==NULL) {
+            hashmap_insert(cpu->constant_pool, operand, data);
+        }
+        return data;
+    }
+    return NULL;
+}
+
+void *register_addressing(CPU *cpu, const char *operand) {
+    if(matches("^[A-D]X$",operand)) {
+        int *data = hashmap_get(cpu->constant_pool, operand);
+        return data;
+    }
+    return NULL;
 }
