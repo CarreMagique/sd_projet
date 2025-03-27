@@ -150,8 +150,62 @@ void *immediate_addressing(CPU *cpu, const char *operand) {
 
 void *register_addressing(CPU *cpu, const char *operand) {
     if(matches("^[A-D]X$",operand)) {
+
         int *data = hashmap_get(cpu->context, operand);
         return data;
+    }
+    return NULL;
+}
+
+void *memory_direct_addressing(CPU *cpu, const char *operand) {
+    if(matches("^\[[0-9]*\]$",operand)) {
+        int *data=(int *)malloc(sizeof(int));
+        sscanf(operand, "[%d]", data);
+        return cpu->memory_handler->memory[*data];
+    }
+    return NULL;
+}
+
+void *register_indirect_addressing(CPU *cpu, const char*operand) {
+    if(matches("^\[[A-D]X\]$",operand)) {
+        char buffer[10];
+        sscanf(operand, "[%s]", buffer);
+        int* index = hashmap_get(cpu->context, buffer);
+        if(index!=NULL) {
+            return cpu->memory_handler->memory[*index];
+        }
+        return NULL;
+    }
+    return NULL;
+}
+
+void handle_MOV(CPU* cpu, void* src, void* dest) {
+    /*
+    assert(* (int *)src>=0);
+    assert(* (int *)dest>=0);
+    assert(cpu->memory_handler->total_size> *(int *)src);
+    assert(cpu->memory_handler->total_size> *(int *)dest);
+    cpu->memory_handler->memory[* (int *)dest]=cpu->memory_handler->memory[* (int *)src];
+    */
+    *(int *)dest=*(int *)src;
+}
+
+void *resolve_addressing(CPU *cpu, const char *operand){
+    void* res = immediate_addressing(cpu, operand);
+    if(res){
+        return res;
+    }
+    res = register_indirect_addressing(cpu,operand);
+    if(res){
+        return res;
+    }
+    res = memory_direct_addressing(cpu, operand);
+    if(res){
+        return res;
+    }
+    res = register_addressing(cpu, operand) ;
+    if(res){
+        return res;
     }
     return NULL;
 }

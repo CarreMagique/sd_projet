@@ -54,8 +54,7 @@ int hashmap_insert(HashMap *map, const char *key, void *value){
 
 void *hashmap_get(HashMap *map, const char *key){
     int i;
-    
-    for(i = simple_hash(key); i < map->size && strcmp(map->table[i].key, key) != 0; i++){}
+    for(i = simple_hash(key); i < map->size && map->table[i].key!=NULL && strcmp(map->table[i].key, key) != 0; i++){}
     if(i != map->size && map->table[i].value != TOMBSTONE){
         return map->table[i].value;
     }

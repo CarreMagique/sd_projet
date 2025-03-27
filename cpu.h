@@ -22,4 +22,8 @@ void allocate_variables(CPU *cpu, Instruction** data_instructions, int data_coun
 void print_data_segment(CPU *cpu);
 void *immediate_addressing(CPU *cpu, const char *operand);
 void *register_addressing(CPU *cpu, const char *operand);
+void *memory_direct_addressing(CPU *cpu, const char *operand);
+void *register_indirect_addressing(CPU *cpu, const char*operand);
+void handle_MOV(CPU* cpu, void* src, void* dest);
+void *resolve_addressing(CPU *cpu, const char *operand);
 #endif

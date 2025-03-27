@@ -1,5 +1,39 @@
 #include "../cpu.h"
 #include "../parser.h"
+
+CPU * setup_test_environment () {
+    // Initialiser le CPU
+    CPU * cpu = cpu_init(1024) ;
+    if (! cpu ) {
+        printf ("Error CPU initalization failed\n") ;
+        return NULL ;
+    }
+    // Initialiser les registres avec des valeurs specifiques
+    int * ax = ( int *) hashmap_get ( cpu->context , "AX" ) ;
+    int * bx = ( int *) hashmap_get ( cpu->context , "BX" ) ;
+    int * cx = ( int *) hashmap_get ( cpu->context , "CX" ) ;
+    int * dx = ( int *) hashmap_get ( cpu->context , "DX" ) ;
+
+    * ax = 3;
+    * bx = 6;
+    * cx = 100;
+    * dx = 0;
+    
+    // Creer et initialiser le segment de donnees
+    if (hashmap_get(cpu->memory_handler->allocated,"DS")==NULL) {
+        create_segment(cpu->memory_handler, "DS", 0, 20);
+
+        // Initialiser le segment de d o n n e s avec des valeurs de test
+        for ( int i = 0; i < 10; i ++) {
+            int * value = ( int *) malloc (sizeof(int));
+            * value = i * 10 + 5; // Valeurs 5, 15, 25, 35...
+            store (cpu->memory_handler , "DS" , i , value );
+        }
+    }
+    printf ("Test environment initialized\n");
+    return cpu ;
+}
+
 int main(){
     CPU* cpu = cpu_init(1000);
     ParserResult* pr = parse("tests/test_parser.txt");
@@ -7,4 +41,27 @@ int main(){
     print_data_segment(cpu);
     cpu_destroy(cpu);
     free_parser_result(pr);
+
+    CPU* cpu_test = setup_test_environment();
+    int *dest1=load(cpu_test->memory_handler, "DS", 0);
+    int *src1=immediate_addressing(cpu_test,"42");
+    handle_MOV(cpu_test,dest1,src1);
+    printf("%d %d\n",* (int *)dest1, * (int *)src1);
+    assert((*dest1)==(*src1));
+
+    int *dest2=load(cpu_test->memory_handler, "DS", 1);
+    int *src2=register_addressing(cpu_test, "AX");
+    handle_MOV(cpu_test,src2,dest2);
+    assert(* (int*)dest2==42);
+
+    int *dest3=load(cpu_test->memory_handler, "DS", 2);
+    int *src3=memory_direct_addressing(cpu_test, "[3]");
+    handle_MOV(cpu_test,src3,dest3);
+    assert(* (int *)dest3==0);
+
+    int *dest4=load(cpu_test->memory_handler, "DS", 3);
+    int *src4=register_indirect_addressing(cpu_test, "[AX]");
+    handle_MOV(cpu_test,src4,dest4);
+    assert(* (int *)dest4==42);
+    cpu_destroy(cpu_test);
 }
