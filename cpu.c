@@ -150,7 +150,7 @@ void *immediate_addressing(CPU *cpu, const char *operand) {
 
 void *register_addressing(CPU *cpu, const char *operand) {
     if(matches("^[A-D]X$",operand)) {
-        int *data = hashmap_get(cpu->constant_pool, operand);
+        int *data = hashmap_get(cpu->context, operand);
         return data;
     }
     return NULL;
