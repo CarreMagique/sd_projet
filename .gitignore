@@ -2,6 +2,7 @@
 *.exe
 *.ps
 .vscode
+core
 main
 main_hashmap
 test_hashmap
