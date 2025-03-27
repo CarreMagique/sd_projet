@@ -163,7 +163,7 @@ void *register_addressing(CPU *cpu, const char *operand) {
 }
 
 void *memory_direct_addressing(CPU *cpu, const char *operand) {
-    if(matches("^\[[0-9]*\]$",operand)) {
+    if(matches("^\\[[0-9]*\\]$",operand)) {
         int *data=(int *)malloc(sizeof(int));
         sscanf(operand, "[%d]", data);
         return cpu->memory_handler->memory[*data];
