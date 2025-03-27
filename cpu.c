@@ -119,7 +119,12 @@ void allocate_variables(CPU *cpu, Instruction** data_instructions, int data_coun
 void print_data_segment(CPU *cpu) {
     Segment *DS = hashmap_get(cpu->memory_handler->allocated, "DS");
     for(int i=DS->start; i <DS->start+DS->size; i++) {
-        printf("%d\t",* (int *)(cpu->memory_handler->memory[i]));
+        if(cpu->memory_handler->memory[i]) {
+            printf("%d\t",* (int *)(cpu->memory_handler->memory[i]));
+        } else {
+            printf(".\t");
+        }
+        
     }
     printf("\n");
 }
@@ -167,13 +172,14 @@ void *memory_direct_addressing(CPU *cpu, const char *operand) {
 }
 
 void *register_indirect_addressing(CPU *cpu, const char*operand) {
-    if(matches("^\[[A-D]X\]$",operand)) {
-        char buffer[10];
+    if(matches("^\\[[A-D]X\\]$",operand)) {
+        char buffer[3];
         sscanf(operand, "[%s]", buffer);
+        buffer[2]='\0'; //sinon seg fault
         int* index = hashmap_get(cpu->context, buffer);
         if(index!=NULL) {
             return cpu->memory_handler->memory[*index];
-        }
+        }        
         return NULL;
     }
     return NULL;
