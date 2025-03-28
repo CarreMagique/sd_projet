@@ -22,4 +22,6 @@ int main(){
     assert(hashmap_insert(map, "test", &x)==0);
     assert(*(int *)hashmap_get(map,"test") == 32);
     free(p);
+    hashmap_destroy(map);
+    return 0;
 }
