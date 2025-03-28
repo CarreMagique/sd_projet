@@ -106,3 +106,22 @@ int remove_segment(MemoryHandler *handler, const char *name) {
     hashmap_remove(handler->allocated,name);
     return 0;
 }
+
+void free_segment(Segment *seg) {
+    Segment *temp;
+    while(seg) {
+        temp=seg;
+        seg=seg->next;
+        free(temp);
+    }
+}
+
+void free_memory_handler(MemoryHandler *mem) {
+    for(int i=0; i<mem->total_size; i++) {
+        free(mem->memory[i]);
+    }
+    free(mem->memory);
+    free_segment(mem->free_list);
+    hashmap_destroy(mem->allocated);
+    free(mem);
+}

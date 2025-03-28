@@ -36,5 +36,14 @@ int main(){
     parcours=parcours->next;
     assert(parcours->start==border3->start+border3->size);
     assert(parcours->start+parcours->size==border2->start);
+
+    free_segment(border1);
+    free_segment(border2);
+    free_segment(border3);
+    free_segment(hashmap_get(memo->allocated, "border1")); //Pour eviter les fuites memoires
+    free_segment(hashmap_get(memo->allocated, "border2"));
+    free_segment(hashmap_get(memo->allocated, "border3"));
+    free_memory_handler(memo);
+
     return 0;
 }
