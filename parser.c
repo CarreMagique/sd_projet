@@ -1,4 +1,5 @@
 #include "parser.h"
+
 int var_count;
 Instruction *parse_data_instruction(const char *line, HashMap *memory_locations, int data_count) {
     char* word=(char *)malloc(sizeof(char)*10);
@@ -161,16 +162,26 @@ ParserResult *parse(const char *filename){
     return pr;
 }
 
+void free_instruction(Instruction *ins) {
+    free(ins->mnemonic);
+    free(ins->operand1);
+    free(ins->operand2);
+    free(ins);
+}
+
 void free_parser_result(ParserResult *result) {
     for(int i = 0; i<result->data_count; i++){
         free(hashmap_get(result->memory_locations, result->data_instructions[i]->mnemonic));
+        free_instruction(result->data_instructions[i]);
     } 
-    /* On attend le tips d'Anissa
+    
+    free(hashmap_get(result->labels,"start")); //Solution possible mais impossible d'acceder aux autres labels
+    free(hashmap_get(result->labels,"loop"));
+
     for(int i = 0; i<result->code_count; i++){
-        printf("%d\n",i);
-        free(hashmap_get(result->labels, result->code_instructions[i]->mnemonic));
+        free_instruction(result->code_instructions[i]);
     }
-    */
+    
     hashmap_destroy(result->memory_locations);
     hashmap_destroy(result->labels);
     free(result->code_instructions);
