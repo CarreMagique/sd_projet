@@ -43,7 +43,7 @@ int main(){
     free_segment(hashmap_get(memo->allocated, "border1")); //Pour eviter les fuites memoires
     free_segment(hashmap_get(memo->allocated, "border2"));
     free_segment(hashmap_get(memo->allocated, "border3"));
-    free_memory_handler(memo);
+    free_memory_handler(memo, memo->total_size);
 
     return 0;
 }
