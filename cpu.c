@@ -1,5 +1,5 @@
 #include "cpu.h"
-#include "hashmap.h"
+#include "memoryHandler.h"
 
 CPU *cpu_init(int memory_size) {
     CPU* cpu = (CPU *) malloc(sizeof(CPU));
@@ -24,13 +24,6 @@ CPU *cpu_init(int memory_size) {
 }
 
 void cpu_destroy(CPU *cpu) {
-    Segment *parcours=cpu->memory_handler->free_list;
-    Segment *temp;
-    while(parcours) {
-        temp=parcours;
-        parcours=parcours->next;
-        free(temp);
-    }
     void *data=hashmap_get(cpu->context,"AX");
     if(data) {free(data);}
 
@@ -43,9 +36,9 @@ void cpu_destroy(CPU *cpu) {
     data=hashmap_get(cpu->context,"DX");
     if(data) {free(data);}
 
-    free(cpu->memory_handler->memory);
-    hashmap_destroy(cpu->memory_handler->allocated);
-    free(cpu->memory_handler);
+    Segment *DS = hashmap_get(cpu->memory_handler->allocated, "DS");
+    free_memory_handler(cpu->memory_handler, DS->start+DS->size); //On utilise la taille sinon seg fault
+    free_segment(DS);
     hashmap_destroy(cpu->context);
     hashmap_destroy(cpu->constant_pool);
     free(cpu);

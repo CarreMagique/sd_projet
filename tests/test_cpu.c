@@ -1,6 +1,7 @@
 #include "../cpu.h"
 #include "../parser.h"
 #include <assert.h>
+#include <stdio.h>
 
 CPU * setup_test_environment () {
     // Initialiser le CPU
@@ -70,4 +71,5 @@ int main(){
     assert(* (int *)dest4==35); //3*10+5
     print_data_segment(cpu_test);
     cpu_destroy(cpu_test);
+    return 0;
 }
