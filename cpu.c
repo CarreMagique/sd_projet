@@ -24,18 +24,11 @@ CPU *cpu_init(int memory_size) {
 }
 
 void cpu_destroy(CPU *cpu) {
-    void *data=hashmap_get(cpu->context,"AX");
-    if(data) {free(data);}
-
-    data=hashmap_get(cpu->context,"BX");
-    if(data) {free(data);}
-
-    data=hashmap_get(cpu->context,"CX");
-    if(data) {free(data);}
-
-    data=hashmap_get(cpu->context,"DX");
-    if(data) {free(data);}
-
+    free(hashmap_get(cpu->context,"AX"));
+    free(hashmap_get(cpu->context,"BX"));
+    free(hashmap_get(cpu->context,"CX"));
+    free(hashmap_get(cpu->context,"DX"));
+    
     Segment *DS = hashmap_get(cpu->memory_handler->allocated, "DS");
     free_memory_handler(cpu->memory_handler, DS->start+DS->size); //On utilise la taille sinon seg fault
     free_segment(DS);
@@ -71,7 +64,6 @@ void allocate_variables(CPU *cpu, Instruction** data_instructions, int data_coun
     int size = 0;
     for(int i=0; i<data_count; i++) {
         ins=data_instructions[i];
-        //ça c'est faux c'est juste que l'array s'appelle arr, enfaite il n'y aucun moyen de distinguer une array d'une variable classique, faudra demander à Anissa
         for(int j = 0; ins->operand2[j]!='\0'; j++){
             if(ins->operand2[j] == ','){
                 size = size+1;

@@ -13,6 +13,8 @@ int main() {
     assert(strcmp(parser->data_instructions[1]->mnemonic,"arr")==0);
     assert(strcmp(parser->data_instructions[1]->operand1,"DB")==0);
     assert(strcmp(parser->data_instructions[1]->operand2,"20 ,21 ,22 ,23")==0);
+
+    assert(strcmp(parser->data_instructions[2]->mnemonic,"y")==0);
   
     assert(parser->data_count==3);
     assert( * (int *)hashmap_get(parser->memory_locations,"x")==0);

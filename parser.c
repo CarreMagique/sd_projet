@@ -1,8 +1,9 @@
 #include "parser.h"
+#define WORD_SIZE 32
 
 int var_count;
 Instruction *parse_data_instruction(const char *line, HashMap *memory_locations, int data_count) {
-    char* word=(char *)malloc(sizeof(char)*10);
+    char* word=(char *)malloc(sizeof(char)*WORD_SIZE);
     assert(word);
     int i=0, j=0, count=0;
     Instruction *ins=(Instruction *)malloc(sizeof(Instruction));
@@ -24,6 +25,7 @@ Instruction *parse_data_instruction(const char *line, HashMap *memory_locations,
                 ins->operand2=strdup(word);
             }
             free(word);
+            word=NULL;
             break;
         } else {
             if(count==0) { //Premier mot : mnemonic
@@ -33,13 +35,13 @@ Instruction *parse_data_instruction(const char *line, HashMap *memory_locations,
                 *d = data_count+var_count;
                 hashmap_insert(memory_locations,ins->mnemonic,d);
                 free(word);
-                word=(char *)malloc(sizeof(char)*10);
+                word=(char *)malloc(sizeof(char)*WORD_SIZE);
                 j=0;
             } else if(count==1) { //Deuxieme mot : operand1
                 word[j]='\0';
                 ins->operand1=strdup(word);
                 free(word);
-                word=(char *)malloc(sizeof(char)*10);
+                word=(char *)malloc(sizeof(char)*WORD_SIZE);
                 j=0;
             } else {
                 word[j]=line[i];
@@ -52,11 +54,12 @@ Instruction *parse_data_instruction(const char *line, HashMap *memory_locations,
         }
         i++;
     }
+    if(word) {free(word);} //Si l'on est pas rentre dans la boucle, il faut liberer word
     return ins;
 }
 
 Instruction *parse_code_instruction(const char *line, HashMap *labels, int code_count){
-    char* word=(char *)malloc(sizeof(char)*10);
+    char* word=(char *)malloc(sizeof(char)*WORD_SIZE);
     int i=0, j=0, count=0;
     Instruction *ins=(Instruction *)malloc(sizeof(Instruction));
     assert(ins);
@@ -77,6 +80,7 @@ Instruction *parse_code_instruction(const char *line, HashMap *labels, int code_
                 ins->operand2=strdup(word);
             }
             free(word);
+            word=NULL;
             break;
         } else {
             if(count==0) {
@@ -91,13 +95,13 @@ Instruction *parse_code_instruction(const char *line, HashMap *labels, int code_
                     ins->mnemonic=strdup(word);
                 }
                 free(word);
-                word=(char *)malloc(sizeof(char)*10);
+                word=(char *)malloc(sizeof(char)*WORD_SIZE);
                 j=0;
             } else if(count==1) {
                 word[j]='\0';
                 ins->operand1=strdup(word);
                 free(word);
-                word=(char *)malloc(sizeof(char)*10);
+                word=(char *)malloc(sizeof(char)*WORD_SIZE);
                 j=0;
             }
             count++;
@@ -112,8 +116,8 @@ Instruction *parse_code_instruction(const char *line, HashMap *labels, int code_
         } else {   
             ins->operand2=strdup(word);
         }
-        free(word);
     }
+    if(word) {free(word);}
     return ins;
 }
 
