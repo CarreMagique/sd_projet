@@ -1,5 +1,4 @@
 #include "cpu.h"
-#include "memoryHandler.h"
 
 CPU *cpu_init(int memory_size) {
     CPU* cpu = (CPU *) malloc(sizeof(CPU));
@@ -34,18 +33,8 @@ CPU *cpu_init(int memory_size) {
 }
 
 void cpu_destroy(CPU *cpu) {
-    free(hashmap_get(cpu->context,"AX"));
-    free(hashmap_get(cpu->context,"BX"));
-    free(hashmap_get(cpu->context,"CX"));
-    free(hashmap_get(cpu->context,"DX"));
-
-    free(hashmap_get(cpu->context,"IP"));
-    free(hashmap_get(cpu->context,"SF"));
-    free(hashmap_get(cpu->context,"ZF"));
-    
     Segment *DS = hashmap_get(cpu->memory_handler->allocated, "DS");
     free_memory_handler(cpu->memory_handler, DS->start+DS->size); //On utilise la taille sinon seg fault
-    free_segment(DS);
     hashmap_destroy(cpu->context);
     hashmap_destroy(cpu->constant_pool);
     free(cpu);
@@ -90,6 +79,7 @@ void allocate_variables(CPU *cpu, Instruction** data_instructions, int data_coun
     int res = create_segment(cpu->memory_handler, "DS", start, size);
     if(res == 1){
         printf("Problème");
+        return;
     }
     int c_m = start;
     for(int i=0; i<data_count; i++) {
@@ -99,19 +89,19 @@ void allocate_variables(CPU *cpu, Instruction** data_instructions, int data_coun
         int b = 0;
         for(int j = 0; ins->operand2[j]!='\0'; j++){
             buffer[b] = ins->operand2[j];
-            b = b +1;
+            b++;
             if(ins->operand2[j] == ','){
                 int* p = malloc(sizeof(int));
                 *p= atoi(buffer);
                 store(cpu->memory_handler, "DS", c_m, (void*) p);
-                c_m = c_m+1;
+                c_m++;
                 b = 0;
             }
         }
         int* p = malloc(sizeof(int));
         *p= atoi(buffer);
         store(cpu->memory_handler, "DS", c_m, (void*) p);
-        c_m = c_m+1;
+        c_m++;
     }
 }
 
@@ -154,7 +144,6 @@ void *immediate_addressing(CPU *cpu, const char *operand) {
 
 void *register_addressing(CPU *cpu, const char *operand) {
     if(matches("^[A-D]X$",operand)) {
-
         int *data = hashmap_get(cpu->context, operand);
         return data;
     }
@@ -163,9 +152,9 @@ void *register_addressing(CPU *cpu, const char *operand) {
 
 void *memory_direct_addressing(CPU *cpu, const char *operand) {
     if(matches("^\\[[0-9]*\\]$",operand)) {
-        int *data=(int *)malloc(sizeof(int));
-        sscanf(operand, "[%d]", data);
-        return cpu->memory_handler->memory[*data];
+        int data=0;
+        sscanf(operand, "[%d]", &data);
+        return cpu->memory_handler->memory[data];
     }
     return NULL;
 }
@@ -247,7 +236,6 @@ int search_and_replace ( char ** str , HashMap * values ) {
                 // Calculate lengths
                 int key_len = strlen ( key ) ;
                 int repl_len = strlen ( replacement ) ;
-                int remain_len = strlen ( substr + key_len ) ;
             
                 // Create new string
                 char * new_str = ( char *) malloc ( strlen ( input ) - key_len + repl_len +1) ;
@@ -277,5 +265,39 @@ int search_and_replace ( char ** str , HashMap * values ) {
 }
 
 int resolve_constants(ParserResult *result) {
-    
+    int res=0;
+    for(int i =0; i<result->code_count; i++) {
+        res=search_and_replace(&(result->code_instructions[i]->operand1), result->memory_locations);
+        if(res==0) {
+            printf("Replacing not done\n");
+        }
+        printf("%s\n", result->code_instructions[i]->operand2);
+    }
+    return res;
 }
+
+void allocate_code_segment(CPU *cpu, Instruction **code_instructions, int code_count) {
+    int* start=hashmap_get(cpu->memory_handler->allocated, "DS");
+    if(start==NULL) {
+        start=malloc(sizeof(int));
+        *start=0;
+    }
+    int res = create_segment(cpu->memory_handler, "CS", *start, code_count);
+    if(res==1) {
+        printf("Cannot create code segment\n");
+    }
+    
+    int c_m = *start;
+    Instruction *ins;
+    for(int i=0; i<code_count; i++) {
+        ins=code_instructions[i];
+        int* p = malloc(sizeof(int));
+        sscanf(ins->operand2, " %d ", p);
+        store(cpu->memory_handler, "CS", c_m, (void*) p);
+        c_m++;
+    }
+    
+    int *ip = hashmap_get(cpu->context, "IP");
+    *ip=0;
+}
+
