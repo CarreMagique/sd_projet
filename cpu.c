@@ -184,6 +184,76 @@ void handle_MOV(CPU* cpu, void* src, void* dest) {
     *(int *)dest=*(int *)src;
 }
 
+void handle_ADD(CPU* cpu, void* src, void* dest){
+    *(int *)dest=*(int *)src+*(int *)dest;
+}
+
+int handle_CMP(CPU* cpu, void* src, void* dest){
+    int v_dest = *(int *)dest;
+    int v_src = *(int *)src;
+    if(v_dest == v_src){
+        int* zf = (int *)hashmap_get(cpu->context, "ZF");
+        *zf = 1;
+        return 0;
+    }
+    if(v_dest < v_src){
+        int* sf = (int *)hashmap_get(cpu->context, "SF");
+        *sf = 1;
+        return 0;
+    }
+    return 1;
+}
+
+int handle_JMP(CPU* cpu, void* src, void* dest){
+    int * ip = (int *)hashmap_get(cpu->context, "IP");
+    if(ip==NULL) {
+        return 1;
+    }
+    *ip = *(int*)dest;
+    return 0;
+}
+
+int handle_JZ(CPU* cpu, void* src, void* dest){
+    int * zf = (int *)hashmap_get(cpu->context, "ZF");
+    if(zf==NULL) {
+        return 1;
+    }
+    if(*zf == 1){
+        int * ip = (int *)hashmap_get(cpu->context, "IP");
+        if(ip==NULL) {
+            return 1;
+        }
+        *ip = *(int *) dest;
+        return 0;
+    }
+    return 1;
+}
+
+int handle_JNZ(CPU* cpu, void* src, void* dest){
+    int *zf = (int *)hashmap_get(cpu->context, "ZF");
+    if(zf==NULL) {
+        return 1;
+    }
+    if(*zf == 0){
+        int *ip=(int *)hashmap_get(cpu->context, "IP");
+        if(ip==NULL) {
+            return 1;
+        }
+        *ip = *(int *) dest;
+        return 0;
+    }
+    return 1;
+}
+
+int handle_HALT(CPU* cpu, void* src, void* dest) {
+    Segment* cseg = hashmap_get(cpu->memory_handler->allocated, "CS");
+    if(cseg==NULL) {
+        return 1;
+    }
+    *(int *)hashmap_get(cpu->context, "IP") = cseg->size;
+    return 0;
+}
+
 void *resolve_addressing(CPU *cpu, const char *operand){
     void* res = immediate_addressing(cpu, operand);
     if(res){
@@ -301,3 +371,29 @@ void allocate_code_segment(CPU *cpu, Instruction **code_instructions, int code_c
     *ip=0;
 }
 
+int handle_instruction(CPU *cpu, Instruction *instr, void *src, void *dest){
+    if(strcmp(instr->mnemonic, "MOV") == 0){
+        handle_MOV(cpu, src, dest);
+        return 0;
+    }
+    if(strcmp(instr->mnemonic, "ADD") == 0){
+        handle_ADD(cpu, src, dest);
+        return 0;
+    }
+    if(strcmp(instr->mnemonic, "CMP") == 0){
+        return handle_CMP(cpu, src, dest);
+    }
+    if(strcmp(instr->mnemonic, "JMP") == 0){
+        return handle_JMP(cpu, src, dest);
+    }
+    if(strcmp(instr->mnemonic, "JZ") == 0){
+        return handle_JZ(cpu, src, dest);
+    }
+    if(strcmp(instr->mnemonic, "JNZ") == 0){
+        return handle_JNZ(cpu, src, dest);
+    }
+    if(strcmp(instr->mnemonic, "HALT") == 0) {
+        return handle_HALT(cpu, src, dest);
+    }
+    return 1;
+ }
