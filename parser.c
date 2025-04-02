@@ -88,7 +88,7 @@ Instruction *parse_code_instruction(const char *line, HashMap *labels, int code_
                     word[j-1] = '\0';
                     int* d = malloc(sizeof(int));
                     *d = code_count;
-                    hashmap_insert(labels,strdup(word),d);
+                    hashmap_insert(labels,word,d);
                     count--; //Ce mot n'est pas une instruction, on reinitialise donc le compteur
                 }else{
                     word[j]='\0';
@@ -175,13 +175,9 @@ void free_instruction(Instruction *ins) {
 
 void free_parser_result(ParserResult *result) {
     for(int i = 0; i<result->data_count; i++){
-        free(hashmap_get(result->memory_locations, result->data_instructions[i]->mnemonic));
         free_instruction(result->data_instructions[i]);
     } 
     
-    free(hashmap_get(result->labels,"start")); //Solution possible mais impossible d'acceder aux autres labels
-    free(hashmap_get(result->labels,"loop"));
-
     for(int i = 0; i<result->code_count; i++){
         free_instruction(result->code_instructions[i]);
     }
