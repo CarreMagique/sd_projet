@@ -19,6 +19,9 @@ CPU *cpu_init(int memory_size) {
     *d=0;
     hashmap_insert(cpu->context, "DX", d);
 
+    int* y = malloc(sizeof(int));
+    hashmap_insert(cpu->context, "DB", y);
+
     int* i=malloc(sizeof(int));
     *i=0;
     hashmap_insert(cpu->context, "IP", i);
@@ -56,9 +59,6 @@ void* store(MemoryHandler *handler, const char *segment_name,int pos, void *data
     Segment *seg = hashmap_get(handler->allocated, segment_name);
     if(seg==NULL) {return NULL;}
     if(pos>seg->size || pos>handler->total_size) {return NULL;}
-    if(strcmp(segment_name,"CS")==0) {
-        printf("pos : %d data : %d\n", pos, *(int *)data);
-    }
     handler->memory[pos+seg->start]=data;
 
     return data;
@@ -135,7 +135,7 @@ int matches(const char * pattern, const char * string) {
 void *immediate_addressing(CPU *cpu, const char *operand) {
     if(matches("^[0-9]*$",operand)) {
         int *data=(int *)malloc(sizeof(int));
-        sscanf(operand, "%d", data);
+        sscanf(operand, " %d ", data);
         if(hashmap_get(cpu->constant_pool, operand)==NULL) {
             hashmap_insert(cpu->constant_pool, operand, data);
         }
@@ -155,7 +155,7 @@ void *register_addressing(CPU *cpu, const char *operand) {
 void *memory_direct_addressing(CPU *cpu, const char *operand) {
     if(matches("^\\[[0-9]*\\]$",operand)) {
         int data=0;
-        sscanf(operand, "[%d]", &data);
+        sscanf(operand, " %d ", &data);
         return cpu->memory_handler->memory[data];
     }
     return NULL;
@@ -294,10 +294,9 @@ int search_and_replace ( char ** str , HashMap * values ) {
     
     // Iterate through all keys in the hashmap
     for ( int i = 0; i < values -> size ; i ++) {
-        if ( values -> table [ i ]. key && values -> table [ i ]. key != ( void *) -1) {
-            char * key = values -> table [ i ]. key ;
-            int value = ( int ) ( long ) values -> table [ i ]. value ;
-    
+        if ( values -> table [i]. key && values -> table [i]. key != TOMBSTONE) {
+            char * key = values -> table [i]. key ;
+            int value = * ( int *) values -> table [i]. value ;
             // Find potential substring match
             char * substr = strstr ( input , key ) ;
             if ( substr ) {
@@ -320,7 +319,6 @@ int search_and_replace ( char ** str , HashMap * values ) {
                 free ( input ) ;
                 * str = new_str ;
                 input = new_str ;
-            
                 replaced = 1;
             }
         }
@@ -337,15 +335,13 @@ int search_and_replace ( char ** str , HashMap * values ) {
 }
 
 int resolve_constants(ParserResult *result) {
-    int res=0;
     for(int i =0; i<result->code_count; i++) {
-        res=search_and_replace(&(result->code_instructions[i]->operand1), result->memory_locations);
-        if(res==0) {
-            printf("Replacing not done\n");
+        if(result->code_instructions[i]->operand2) {
+            search_and_replace(&(result->code_instructions[i]->operand2), result->memory_locations);
+            //printf("res : %s\n", result->code_instructions[i]->operand2);
         }
-        printf("%s\n", result->code_instructions[i]->operand2);
     }
-    return res;
+    return 0;
 }
 
 void allocate_code_segment(CPU *cpu, Instruction **code_instructions, int code_count) {
@@ -361,18 +357,26 @@ void allocate_code_segment(CPU *cpu, Instruction **code_instructions, int code_c
         printf("Cannot create code segment\n");
         return;
     }
-    printf("start %d\n", start);
-    Instruction *ins;
+    Instruction *ins=NULL;
     for(int i=0; i<code_count; i++) {
         ins=code_instructions[i];
-        printf("%s\n", ins->operand1);
         int* p = malloc(sizeof(int));
         assert(p);
-        p = resolve_addressing(cpu, ins->operand1);
+        if(ins->operand2) {
+            p = resolve_addressing(cpu, ins->operand2);
+        } else if(ins->operand1) {
+            p = resolve_addressing(cpu, ins->operand1);
+        } else {
+            printf("Big issue\n");
+            return;
+        }
+    
+        printf("p : %d\n", *p);
         if(p==NULL) {
             printf("Cannot resolve address\n");
             continue;
         }
+
         if(store(cpu->memory_handler, "CS", i, (void*) p)==NULL) {
             printf("Cannot store code instruction\n");
         }

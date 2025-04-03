@@ -3,3 +3,4 @@ make tests
 ./test_memoryHandler
 ./test_parser
 ./test_cpu
+./test_cpu2
