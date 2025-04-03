@@ -396,4 +396,54 @@ int handle_instruction(CPU *cpu, Instruction *instr, void *src, void *dest){
         return handle_HALT(cpu, src, dest);
     }
     return 1;
- }
+}
+
+int execute_instruction(CPU *cpu, Instruction *instr) {
+    void * src = resolve_addressing(cpu,instr->operand1);
+    if(src==NULL) {return 1;}
+    void * dest = resolve_addressing(cpu,instr->operand2);
+    if(dest==NULL) {return 1;}
+    
+    return handle_instruction(cpu, instr, src, dest);
+}
+
+Instruction* fetch_next_instruction(CPU *cpu){
+    int * ip = (int *)hashmap_get(cpu->context, "IP");
+    if(ip==NULL) {
+        return NULL;
+    }
+    Instruction * i = (Instruction *) load(cpu->memory_handler, "CS", *ip);
+    if(!i){
+        return NULL;
+    }
+    *ip = *ip+1;
+    return i;
+}
+
+int run_program(CPU *cpu) {
+    // Affichage initial
+    print_data_segment(cpu);
+    printf("Press enter to execute next instruction or 'q' to quit\n");
+    char buffer[5];
+    fgets(buffer, 5, stdin);
+    Instruction *ins=NULL;
+    if(strcmp(buffer, "\n")==0) {
+        ins = fetch_next_instruction(cpu);
+        execute_instruction(cpu, ins);
+    }
+
+    while(ins && fgets(buffer, 5, stdin)) {
+        if(strcmp(buffer, "q")==0) {
+            return 1;
+        }
+        
+        if(strcmp(buffer, "\n")==0) {
+            ins = fetch_next_instruction(cpu);
+            execute_instruction(cpu, ins);
+        }
+    }
+
+    // Affichage final
+    print_data_segment(cpu);
+    return 0;
+}
