@@ -9,3 +9,4 @@ test_hashmap
 test_memoryHandler
 test_parser
 test_cpu
+test_cpu2

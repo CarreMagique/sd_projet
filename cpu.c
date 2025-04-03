@@ -55,8 +55,10 @@ void* load(MemoryHandler *handler, const char *segment_name, int pos){
 void* store(MemoryHandler *handler, const char *segment_name,int pos, void *data) {
     Segment *seg = hashmap_get(handler->allocated, segment_name);
     if(seg==NULL) {return NULL;}
-    if(pos>seg->size) {return NULL;}
-
+    if(pos>seg->size || pos>handler->total_size) {return NULL;}
+    if(strcmp(segment_name,"CS")==0) {
+        printf("pos : %d data : %d\n", pos, *(int *)data);
+    }
     handler->memory[pos+seg->start]=data;
 
     return data;
@@ -347,24 +349,33 @@ int resolve_constants(ParserResult *result) {
 }
 
 void allocate_code_segment(CPU *cpu, Instruction **code_instructions, int code_count) {
-    int* start=hashmap_get(cpu->memory_handler->allocated, "DS");
-    if(start==NULL) {
-        start=malloc(sizeof(int));
-        *start=0;
-    }
-    int res = create_segment(cpu->memory_handler, "CS", *start, code_count);
-    if(res==1) {
-        printf("Cannot create code segment\n");
+    Segment* seg_start=hashmap_get(cpu->memory_handler->allocated, "DS");
+    int res=0, start=0;
+    if(seg_start!=NULL) {
+        start=seg_start->start+seg_start->size;
     }
     
-    int c_m = *start;
+    res = create_segment(cpu->memory_handler, "CS", start, code_count);
+    
+    if(res==1) {
+        printf("Cannot create code segment\n");
+        return;
+    }
+    printf("start %d\n", start);
     Instruction *ins;
     for(int i=0; i<code_count; i++) {
         ins=code_instructions[i];
+        printf("%s\n", ins->operand1);
         int* p = malloc(sizeof(int));
-        sscanf(ins->operand2, " %d ", p);
-        store(cpu->memory_handler, "CS", c_m, (void*) p);
-        c_m++;
+        assert(p);
+        p = resolve_addressing(cpu, ins->operand1);
+        if(p==NULL) {
+            printf("Cannot resolve address\n");
+            continue;
+        }
+        if(store(cpu->memory_handler, "CS", i, (void*) p)==NULL) {
+            printf("Cannot store code instruction\n");
+        }
     }
     
     int *ip = hashmap_get(cpu->context, "IP");
