@@ -49,7 +49,7 @@ void* load(MemoryHandler *handler, const char *segment_name, int pos){
         return NULL;
     }
     if(smg->size<pos){
-        return TOMBSTONE;
+        return NULL;
     }
     void* data = handler->memory[smg->start+pos];
     return data;
@@ -63,7 +63,7 @@ void* store(MemoryHandler *handler, const char *segment_name,int pos, void *data
 
     return data;
 }
-//Rajouter tests store
+
 void allocate_variables(CPU *cpu, Instruction** data_instructions, int data_count) {
     Instruction *ins;
     int size = 0;
@@ -80,7 +80,7 @@ void allocate_variables(CPU *cpu, Instruction** data_instructions, int data_coun
     int start = 0;
     int res = create_segment(cpu->memory_handler, "DS", start, size);
     if(res == 1){
-        printf("Problème");
+        printf("Problème\n");
         return;
     }
     int c_m = start;
@@ -113,7 +113,7 @@ void print_data_segment(CPU *cpu) {
         if(cpu->memory_handler->memory[i]) {
             printf("%d\t",* (int *)(cpu->memory_handler->memory[i]));
         } else {
-            printf(".\t");
+            printf(".\t"); //N'arrive que si la case n'est pas initialisee -> bug
         }
         
     }
@@ -338,7 +338,15 @@ int resolve_constants(ParserResult *result) {
     for(int i =0; i<result->code_count; i++) {
         if(result->code_instructions[i]->operand2) {
             search_and_replace(&(result->code_instructions[i]->operand2), result->memory_locations);
-            //printf("res : %s\n", result->code_instructions[i]->operand2);
+            // On transforme la valeur "i" en "[i]"
+            char temp = * result->code_instructions[i]->operand2;
+            free(result->code_instructions[i]->operand2);
+            result->code_instructions[i]->operand2=(char *) malloc(sizeof(char)*4);
+            result->code_instructions[i]->operand2[0]='[';
+            result->code_instructions[i]->operand2[1]=temp;
+            result->code_instructions[i]->operand2[2]=']';
+            result->code_instructions[i]->operand2[3]='\0';
+            printf("res : %s\n", result->code_instructions[i]->operand2);
         }
     }
     return 0;
@@ -367,11 +375,10 @@ void allocate_code_segment(CPU *cpu, Instruction **code_instructions, int code_c
         } else if(ins->operand1) {
             p = resolve_addressing(cpu, ins->operand1);
         } else {
-            printf("Big issue\n");
-            return;
+            printf("Instruction has no operands\n");
+            continue;;
         }
     
-        printf("p : %d\n", *p);
         if(p==NULL) {
             printf("Cannot resolve address\n");
             continue;
@@ -418,7 +425,7 @@ int execute_instruction(CPU *cpu, Instruction *instr) {
     if(src==NULL) {return 1;}
     void * dest = resolve_addressing(cpu,instr->operand2);
     if(dest==NULL) {return 1;}
-    
+    printf("execute\n");
     return handle_instruction(cpu, instr, src, dest);
 }
 
@@ -427,12 +434,16 @@ Instruction* fetch_next_instruction(CPU *cpu){
     if(ip==NULL) {
         return NULL;
     }
-    Instruction * i = (Instruction *) load(cpu->memory_handler, "CS", *ip);
-    if(!i){
+    if(*ip>cpu->memory_handler->total_size || *ip<0) {
         return NULL;
     }
-    *ip = *ip+1;
-    return i;
+    /*COMMENT RECUPERER LES INSTRUCTIONS SANS PARSER ?*/
+    Segment * seg = (Segment *) load(cpu->memory_handler, "CS", *ip);
+    
+    Instruction* ins=NULL;
+    (*ip)++;
+    printf("fetch\n");
+    return ins;
 }
 
 int run_program(CPU *cpu) {
@@ -444,7 +455,9 @@ int run_program(CPU *cpu) {
     Instruction *ins=NULL;
     if(strcmp(buffer, "\n")==0) {
         ins = fetch_next_instruction(cpu);
-        execute_instruction(cpu, ins);
+        if(execute_instruction(cpu, ins)!=0) {
+            printf("Cannot execute instruction\n");
+        }
     }
 
     while(ins && fgets(buffer, 5, stdin)) {
@@ -454,7 +467,9 @@ int run_program(CPU *cpu) {
         
         if(strcmp(buffer, "\n")==0) {
             ins = fetch_next_instruction(cpu);
-            execute_instruction(cpu, ins);
+            if(execute_instruction(cpu, ins)!=0) {
+                printf("Cannot execute instruction\n");
+            }
         }
     }
 

@@ -46,23 +46,23 @@ int main(){
     
     CPU* cpu_test = setup_test_environment();
     int *dest1=load(cpu_test->memory_handler, "DS", 0);
-    int *src1=immediate_addressing(cpu_test,"42");
+    int *src1=resolve_addressing(cpu_test,"42"); //Devrait appeler immediate_addressing
     handle_MOV(cpu_test,src1,dest1);
     assert(* (int*)dest1==42);
     assert((*dest1)==(*src1));
     
     int *dest2=load(cpu_test->memory_handler, "DS", 1);
-    int *src2=register_addressing(cpu_test, "AX");
+    int *src2=resolve_addressing(cpu_test, "AX"); //Devrait appeler register_addressing
     handle_MOV(cpu_test,src2,dest2);
     assert(* (int*)dest2==3);
     
     int *dest3=load(cpu_test->memory_handler, "DS", 2);
-    int *src3=memory_direct_addressing(cpu_test, "[0]");
+    int *src3=resolve_addressing(cpu_test, "[0]"); //Devrait appeler memory_direct_addressing
     handle_MOV(cpu_test,src3,dest3);
     assert(* (int *)dest3==42); //Nouvelle valeur de AX
     
     int *dest4=load(cpu_test->memory_handler, "DS", 3);
-    int *src4=register_indirect_addressing(cpu_test, "[AX]");
+    int *src4=resolve_addressing(cpu_test, "[AX]"); //Devrait appeler register_indirect_addressing
     handle_MOV(cpu_test,src4,dest4);
     assert(* (int *)dest4==35); //3*10+5
     print_data_segment(cpu_test);
