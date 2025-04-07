@@ -45,6 +45,9 @@ CPU *cpu_init(int memory_size) {
     hashmap_insert(cpu->context, "BP", bp);
 
     int res =create_segment(cpu->memory_handler, "SS", 0, 128);
+    if(res!=0) {
+        printf("Cannot create Stack Segment\n");
+    }
     
     return cpu;
 }
@@ -361,10 +364,7 @@ int search_and_replace ( char ** str , HashMap * values ) {
             int value = * ( int *) values -> table [i]. value ;
             // Find potential substring match
             char * substr = strstr ( input , key ) ;
-            if ( substr ) {Segment* cseg = hashmap_get(cpu->memory_handler->allocated, "CS");
-                if(cseg==NULL) {
-                    return 1;
-                }
+            if ( substr ) {
                 // Construct replacement buffer
                 char replacement [64];
                 snprintf ( replacement , sizeof ( replacement ) , "%d" , value ) ;
