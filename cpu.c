@@ -1,4 +1,5 @@
 #include "cpu.h"
+#include "parser.h"
 
 CPU *cpu_init(int memory_size) {
     CPU* cpu = (CPU *) malloc(sizeof(CPU));
@@ -368,23 +369,27 @@ void allocate_code_segment(CPU *cpu, Instruction **code_instructions, int code_c
     Instruction *ins=NULL;
     for(int i=0; i<code_count; i++) {
         ins=code_instructions[i];
+        /*
         int* p = malloc(sizeof(int));
         assert(p);
+        */
         if(ins->operand2) {
-            p = resolve_addressing(cpu, ins->operand2);
+            resolve_addressing(cpu, ins->operand2);
         } else if(ins->operand1) {
-            p = resolve_addressing(cpu, ins->operand1);
+            resolve_addressing(cpu, ins->operand1);
         } else {
             printf("Instruction has no operands\n");
             continue;;
         }
-    
+        
+        /*
         if(p==NULL) {
             printf("Cannot resolve address\n");
             continue;
         }
+        */
 
-        if(store(cpu->memory_handler, "CS", i, (void*) p)==NULL) {
+        if(store(cpu->memory_handler, "CS", i, (void*) ins)==NULL) {
             printf("Cannot store code instruction\n");
         }
     }
@@ -421,11 +426,13 @@ int handle_instruction(CPU *cpu, Instruction *instr, void *src, void *dest){
 }
 
 int execute_instruction(CPU *cpu, Instruction *instr) {
+    if(instr==NULL) {
+        return 1;
+    }
     void * src = resolve_addressing(cpu,instr->operand1);
     if(src==NULL) {return 1;}
     void * dest = resolve_addressing(cpu,instr->operand2);
     if(dest==NULL) {return 1;}
-    printf("execute\n");
     return handle_instruction(cpu, instr, src, dest);
 }
 
@@ -434,15 +441,13 @@ Instruction* fetch_next_instruction(CPU *cpu){
     if(ip==NULL) {
         return NULL;
     }
-    if(*ip>cpu->memory_handler->total_size || *ip<0) {
+    if(*ip>=cpu->memory_handler->total_size || *ip<0) {
         return NULL;
     }
     /*COMMENT RECUPERER LES INSTRUCTIONS SANS PARSER ?*/
-    Segment * seg = (Segment *) load(cpu->memory_handler, "CS", *ip);
+    Instruction* ins = (Instruction *) load(cpu->memory_handler, "CS", *ip);
     
-    Instruction* ins=NULL;
     (*ip)++;
-    printf("fetch\n");
     return ins;
 }
 
