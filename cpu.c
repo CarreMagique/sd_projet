@@ -1,5 +1,8 @@
 #include "cpu.h"
+#include "hashmap.h"
+#include "memoryHandler.h"
 #include "parser.h"
+#include <stdlib.h>
 
 CPU *cpu_init(int memory_size) {
     CPU* cpu = (CPU *) malloc(sizeof(CPU));
@@ -32,6 +35,16 @@ CPU *cpu_init(int memory_size) {
     int* z=malloc(sizeof(int));
     *z=0;
     hashmap_insert(cpu->context, "ZF", z);
+
+    int* sp=malloc(sizeof(int));
+    *sp=0;
+    hashmap_insert(cpu->context, "SP", sp);
+
+    int* bp=malloc(sizeof(int));
+    *bp=0;
+    hashmap_insert(cpu->context, "BP", bp);
+
+    int res =create_segment(cpu->memory_handler, "SS", 0, 128);
     
     return cpu;
 }
@@ -78,7 +91,11 @@ void allocate_variables(CPU *cpu, Instruction** data_instructions, int data_coun
         size = size+1;
     }
     //On peut pas faire une seule boucle car il faut connaitre la taille du segment avant de l'initialiser
+    Segment* seg= (Segment *) hashmap_get(cpu->memory_handler->allocated, "SS");
     int start = 0;
+    if(seg) {
+        start=seg->start+seg->size;
+    }
     int res = create_segment(cpu->memory_handler, "DS", start, size);
     if(res == 1){
         printf("Problème\n");
@@ -176,6 +193,34 @@ void *register_indirect_addressing(CPU *cpu, const char*operand) {
     return NULL;
 }
 
+int push_value(CPU *cpu, int value) {
+    int *sp=hashmap_get(cpu->context, "SP");
+    (*sp)--;
+    if(*sp<0) {
+        return -1;
+    }
+    if(*sp>cpu->memory_handler->total_size) {
+        return -1;
+    }
+    int *val=malloc(sizeof(int));
+    *val=value;
+    cpu->memory_handler->memory[*sp]=val;
+    return 0;
+}
+
+int pop_value(CPU *cpu, int *dest) {
+    int *sp=hashmap_get(cpu->context, "SP");
+    (*sp)++;
+    if(*sp<0) {
+        return -1;
+    }
+    if(*sp>cpu->memory_handler->total_size) {
+        return -1;
+    }
+    *dest=*(int *)cpu->memory_handler->memory[*sp];
+    return 0;
+}
+
 void handle_MOV(CPU* cpu, void* src, void* dest) {
     /*
     assert(* (int *)src>=0);
@@ -257,6 +302,22 @@ int handle_HALT(CPU* cpu, void* src, void* dest) {
     return 0;
 }
 
+int handle_PUSH(CPU* cpu, void* src) {
+    if(src==NULL) {
+        int *a = hashmap_get(cpu->context, "AX");
+        return push_value(cpu, *a);
+    }    
+    return push_value(cpu, * (int *) src);
+}
+
+int handle_POP(CPU* cpu, void* dest) {
+    if(dest==NULL) {
+        int *a = hashmap_get(cpu->context, "AX");
+        return pop_value(cpu, a);
+    }
+    return pop_value(cpu, dest);
+}
+
 void *resolve_addressing(CPU *cpu, const char *operand){
     void* res = immediate_addressing(cpu, operand);
     if(res){
@@ -300,7 +361,10 @@ int search_and_replace ( char ** str , HashMap * values ) {
             int value = * ( int *) values -> table [i]. value ;
             // Find potential substring match
             char * substr = strstr ( input , key ) ;
-            if ( substr ) {
+            if ( substr ) {Segment* cseg = hashmap_get(cpu->memory_handler->allocated, "CS");
+                if(cseg==NULL) {
+                    return 1;
+                }
                 // Construct replacement buffer
                 char replacement [64];
                 snprintf ( replacement , sizeof ( replacement ) , "%d" , value ) ;
@@ -421,6 +485,12 @@ int handle_instruction(CPU *cpu, Instruction *instr, void *src, void *dest){
     }
     if(strcmp(instr->mnemonic, "HALT") == 0) {
         return handle_HALT(cpu, src, dest);
+    }
+    if(strcmp(instr->mnemonic, "PUSH") == 0){
+        return handle_PUSH(cpu, src);
+    }
+    if(strcmp(instr->mnemonic, "POP") == 0) {
+        return handle_POP(cpu, dest);
     }
     return 1;
 }
