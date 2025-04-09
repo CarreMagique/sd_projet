@@ -555,7 +555,7 @@ int alloc_es_segment(CPU *cpu) {
         }
         Segment *seg = (Segment *) hashmap_get(cpu->memory_handler->allocated, "ES");
         for(int i=seg->start; i<seg->start+seg->size; i++) {
-            *(cpu->memory_handler->memory[i])=0;
+            *(int *)(cpu->memory_handler->memory[i])=0;
         }
         *(int *) hashmap_get(cpu->context, "ES") = seg->start;
         return 0;

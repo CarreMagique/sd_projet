@@ -24,4 +24,5 @@ int create_segment(MemoryHandler *handler, const char *name, int start, int size
 int remove_segment(MemoryHandler *handler, const char *name);
 void free_segment(Segment *seg);
 void free_memory_handler(MemoryHandler *mem, int allocated_size);
+int find_free_address_strategy(MemoryHandler *handler, int size, int strategy);
 #endif

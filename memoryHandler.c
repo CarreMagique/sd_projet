@@ -102,17 +102,34 @@ int create_segment(MemoryHandler *handler, const char *name, int start, int size
     return 0;
 }
 
+Segment* find_base_fit(MemoryHandler* handler, int size){
+    Segment *seg=handler->free_list;
+    if(seg==NULL) {
+        return NULL;
+    }
+    if(seg->size >= size) {
+        return seg;
+    }
+    while(seg) {
+        if(seg->size >=size) {
+            return seg;
+        }
+        seg=seg->next;
+    }
+    return NULL;
+}
+
 Segment* find_best_fit(MemoryHandler* handler, int size){
     Segment *seg=handler->free_list;
     if(seg==NULL) {
         return NULL;
     }
-    if(seg->start<=start && seg->start+seg->size >= start+size) {
+    if(seg->size >= size) {
         return seg;
     }
     Segment* min = NULL;
     while(seg) {
-        if(seg->start<=start && seg->start+seg->size >= start+size && (min == NULL ||seg->size<min->size)) {
+        if(seg->size >=size && (min == NULL ||seg->size<min->size)) {
             min = seg;
         }
         seg=seg->next;
@@ -125,12 +142,12 @@ Segment* find_worst_fit(MemoryHandler* handler, int size){
     if(seg==NULL) {
         return NULL;
     }
-    if(seg->start<=start && seg->start+seg->size >= start+size) {
+    if(seg->size >= size) {
         return seg;
     }
     Segment* max = NULL;
     while(seg) {
-        if(seg->start<=start && seg->start+seg->size >= start+size && (max == NULL ||seg->size>max->size)) {
+        if(seg->start+seg->size >=size && (max == NULL ||seg->size>max->size)) {
             max = seg;
         }
         seg=seg->next;
@@ -139,22 +156,22 @@ Segment* find_worst_fit(MemoryHandler* handler, int size){
 }
 
 int find_free_address_strategy(MemoryHandler *handler, int size, int strategy){
-    switch strategy{
+    Segment* seg =NULL;
+    switch (strategy){
         case 0:
-            Segment* prev = NULL
-            Segment* seg = find_free_segment(handler, size, &prev)->start;
+            seg = find_base_fit(handler, size);
             if(!seg){
                 return -1;
             }
             return seg->start;
         case 1:
-            Segment* seg = find_best_fit(handler, size);
+            seg = find_best_fit(handler, size);
             if(!seg){
                 return -1;
             }
             return seg->start;
         case 2:
-            Segment* seg = find_worst_fit(handler, size);
+            seg = find_worst_fit(handler, size);
             if(!seg){
                 return -1;
             }
