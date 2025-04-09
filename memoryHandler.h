@@ -23,5 +23,5 @@ Segment *find_free_segment(MemoryHandler* handler, int start, int size, Segment*
 int create_segment(MemoryHandler *handler, const char *name, int start, int size);
 int remove_segment(MemoryHandler *handler, const char *name);
 void free_segment(Segment *seg);
-void free_memory_handler(MemoryHandler *mem, int allocated_size);
+void free_memory_handler(MemoryHandler *mem);
 #endif

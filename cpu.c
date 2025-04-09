@@ -1,8 +1,4 @@
 #include "cpu.h"
-#include "hashmap.h"
-#include "memoryHandler.h"
-#include "parser.h"
-#include <stdlib.h>
 
 CPU *cpu_init(int memory_size) {
     CPU* cpu = (CPU *) malloc(sizeof(CPU));
@@ -53,8 +49,14 @@ CPU *cpu_init(int memory_size) {
 }
 
 void cpu_destroy(CPU *cpu) {
-    Segment *DS = hashmap_get(cpu->memory_handler->allocated, "DS");
-    free_memory_handler(cpu->memory_handler, DS->start+DS->size); //On utilise la taille sinon seg fault
+    Segment *seg = hashmap_get(cpu->memory_handler->allocated, "CS");
+    if(seg==NULL) {
+        seg=hashmap_get(cpu->memory_handler->allocated, "DS");
+    }
+    if(seg==NULL) {
+        seg=hashmap_get(cpu->memory_handler->allocated, "SS");
+    }
+    free_memory_handler(cpu->memory_handler); //On utilise la taille sinon seg fault
     hashmap_destroy(cpu->context);
     hashmap_destroy(cpu->constant_pool);
     free(cpu);
@@ -178,9 +180,11 @@ void *register_addressing(CPU *cpu, const char *operand) {
 
 void *memory_direct_addressing(CPU *cpu, const char *operand) {
     if(matches("^\\[[0-9]*\\]$",operand)) {
+        Segment * seg = (Segment *) (hashmap_get(cpu->memory_handler->allocated, "DS"));
+        int start =  seg->start;
         int data=0;
         sscanf(operand, " %d ", &data);
-        return cpu->memory_handler->memory[data];
+        return cpu->memory_handler->memory[start+data];
     }
     return NULL;
 }
@@ -190,9 +194,11 @@ void *register_indirect_addressing(CPU *cpu, const char*operand) {
         char buffer[3];
         sscanf(operand, "[%s]", buffer);
         buffer[2]='\0'; //sinon seg fault
+        Segment * seg = (Segment *) (hashmap_get(cpu->memory_handler->allocated, "DS"));
+        int start =  seg->start;
         int* index = hashmap_get(cpu->context, buffer);
         if(index!=NULL) {
-            return cpu->memory_handler->memory[*index];
+            return cpu->memory_handler->memory[*index+start];
         }        
         return NULL;
     }

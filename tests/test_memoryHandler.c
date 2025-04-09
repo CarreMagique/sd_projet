@@ -40,7 +40,7 @@ int main(){
     free_segment(border1);
     free_segment(border2);
     free_segment(border3);
-    free_memory_handler(memo, memo->total_size);
+    free_memory_handler(memo);
 
     return 0;
 }

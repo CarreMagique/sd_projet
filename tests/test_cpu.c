@@ -26,7 +26,7 @@ CPU * setup_test_environment () {
     if (hashmap_get(cpu->memory_handler->allocated,"DS")==NULL) {
         create_segment(cpu->memory_handler, "DS", start, 20);
 
-        // Initialiser le segment de d o n n e s avec des valeurs de test
+        // Initialiser le segment de donnees avec des valeurs de test
         for ( int i = 0; i < 20; i ++) {
             int * value = ( int *) malloc (sizeof(int));
             * value = i * 10 + 5; // Valeurs 5, 15, 25, 35...
@@ -47,11 +47,12 @@ int main(){
     
     CPU* cpu_test = setup_test_environment();
     print_data_segment(cpu_test);
-    Segment * SS = hashmap_get(cpu_test->memory_handler->allocated, "SS");
-    int start=SS->start+SS->size;    
+    //On recupere le segment DS pour avoir sa position de depart 
+    Segment * DS = hashmap_get(cpu_test->memory_handler->allocated, "DS");
+    int start=DS->start;
+
     int *dest1=load(cpu_test->memory_handler, "DS", start);
     int *src1=resolve_addressing(cpu_test,"42"); //Devrait appeler immediate_addressing
-    printf("marsala\n");
     handle_MOV(cpu_test,src1,dest1);
     assert(* (int*)dest1==42);
     assert((*dest1)==(*src1));
