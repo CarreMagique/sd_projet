@@ -49,13 +49,6 @@ CPU *cpu_init(int memory_size) {
 }
 
 void cpu_destroy(CPU *cpu) {
-    Segment *seg = hashmap_get(cpu->memory_handler->allocated, "CS");
-    if(seg==NULL) {
-        seg=hashmap_get(cpu->memory_handler->allocated, "DS");
-    }
-    if(seg==NULL) {
-        seg=hashmap_get(cpu->memory_handler->allocated, "SS");
-    }
     free_memory_handler(cpu->memory_handler); //On utilise la taille sinon seg fault
     hashmap_destroy(cpu->context);
     hashmap_destroy(cpu->constant_pool);
