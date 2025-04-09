@@ -44,6 +44,10 @@ CPU *cpu_init(int memory_size) {
     *bp=0;
     hashmap_insert(cpu->context, "BP", bp);
 
+    int* es=malloc(sizeof(int));
+    *es=-1;
+    hashmap_insert(cpu->context, "ES", es);
+
     int res =create_segment(cpu->memory_handler, "SS", 0, 128);
     if(res!=0) {
         printf("Cannot create Stack Segment\n");
@@ -338,6 +342,10 @@ void *resolve_addressing(CPU *cpu, const char *operand){
     if(res){
         return res;
     }
+    res = segment_override_addressing(cpu, operand);
+    if(res){
+        return res;
+    }
     return NULL;
 }
 
@@ -519,6 +527,40 @@ Instruction* fetch_next_instruction(CPU *cpu){
     
     (*ip)++;
     return ins;
+}
+
+
+void* segment_override_addressing(CPU* cpu, const char* operand){
+     if(matches("^\\[[C-E]S:[A-D]X\\]$",operand)) {
+        char segment[2];
+        char registre[2];
+        sscanf(operand, "[%s:%s]", segment, registre);
+        return load(cpu->memory_handler, segment, *(int *)register_addressing(cpu, registre));
+     }
+     return NULL;
+}
+
+int alloc_es_segment(CPU *cpu) {
+    int seg_size = * (int *) hashmap_get(cpu->context, "AX");
+    int strategy = * (int *) hashmap_get(cpu->context, "BX");
+    int* zf = (int *) hashmap_get(cpu->context, "ZF");
+    int res = find_free_address_strategy(cpu->memory_handler, seg_size, strategy);
+    if(res==-1) {
+        *zf=1;
+        return 1;
+    } else {
+        *zf=0;
+        if (create_segment(cpu->memory_handler, "ES", res, seg_size)!=0) {
+            printf("Cannot create ES\n");
+        }
+        Segment *seg = (Segment *) hashmap_get(cpu->memory_handler->allocated, "ES");
+        for(int i=seg->start; i<seg->start+seg->size; i++) {
+            *(cpu->memory_handler->memory[i])=0;
+        }
+        *(int *) hashmap_get(cpu->context, "ES") = seg->start;
+        return 0;
+    }
+    return 2;
 }
 
 int run_program(CPU *cpu) {

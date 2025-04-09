@@ -102,6 +102,67 @@ int create_segment(MemoryHandler *handler, const char *name, int start, int size
     return 0;
 }
 
+Segment* find_best_fit(MemoryHandler* handler, int size){
+    Segment *seg=handler->free_list;
+    if(seg==NULL) {
+        return NULL;
+    }
+    if(seg->start<=start && seg->start+seg->size >= start+size) {
+        return seg;
+    }
+    Segment* min = NULL;
+    while(seg) {
+        if(seg->start<=start && seg->start+seg->size >= start+size && (min == NULL ||seg->size<min->size)) {
+            min = seg;
+        }
+        seg=seg->next;
+    }
+    return min;
+}
+
+Segment* find_worst_fit(MemoryHandler* handler, int size){
+    Segment *seg=handler->free_list;
+    if(seg==NULL) {
+        return NULL;
+    }
+    if(seg->start<=start && seg->start+seg->size >= start+size) {
+        return seg;
+    }
+    Segment* max = NULL;
+    while(seg) {
+        if(seg->start<=start && seg->start+seg->size >= start+size && (max == NULL ||seg->size>max->size)) {
+            max = seg;
+        }
+        seg=seg->next;
+    }
+    return max;
+}
+
+int find_free_address_strategy(MemoryHandler *handler, int size, int strategy){
+    switch strategy{
+        case 0:
+            Segment* prev = NULL
+            Segment* seg = find_free_segment(handler, size, &prev)->start;
+            if(!seg){
+                return -1;
+            }
+            return seg->start;
+        case 1:
+            Segment* seg = find_best_fit(handler, size);
+            if(!seg){
+                return -1;
+            }
+            return seg->start;
+        case 2:
+            Segment* seg = find_worst_fit(handler, size);
+            if(!seg){
+                return -1;
+            }
+            return seg->start;
+    }
+    return -1;
+}
+
 int remove_segment(MemoryHandler *handler, const char *name) {
     hashmap_remove(handler->allocated,name);
     return 0;
