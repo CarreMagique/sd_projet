@@ -65,19 +65,18 @@ void* load(MemoryHandler *handler, const char *segment_name, int pos){
     if(!smg){
         return NULL;
     }
-    if(smg->size<pos){
+    if(smg->start+smg->size<pos || pos>handler->total_size){
         return NULL;
     }
-    void* data = handler->memory[smg->start+pos];
+    void* data = handler->memory[pos];
     return data;
 }
 
 void* store(MemoryHandler *handler, const char *segment_name,int pos, void *data) {
     Segment *seg = hashmap_get(handler->allocated, segment_name);
-    if(seg==NULL) {return NULL;}
-    if(pos>seg->size || pos>handler->total_size) {return NULL;}
-    handler->memory[pos+seg->start]=data;
-
+    if(seg==NULL) { return NULL;}
+    if(pos>seg->size+seg->start || pos>handler->total_size) { return NULL;}
+    handler->memory[pos]=data;
     return data;
 }
 
@@ -104,7 +103,7 @@ void allocate_variables(CPU *cpu, Instruction** data_instructions, int data_coun
         printf("Problème\n");
         return;
     }
-    int c_m = start;
+    int c_m = start; //c_m est la position start+size
     for(int i=0; i<data_count; i++) {
         ins=data_instructions[i];
         //On modifiera ça après
@@ -130,11 +129,15 @@ void allocate_variables(CPU *cpu, Instruction** data_instructions, int data_coun
 
 void print_data_segment(CPU *cpu) {
     Segment *DS = hashmap_get(cpu->memory_handler->allocated, "DS");
+    if(DS==NULL) {
+        printf("DS is NULL\n");
+        return;
+    }
     for(int i=DS->start; i <DS->start+DS->size; i++) {
         if(cpu->memory_handler->memory[i]) {
             printf("%d\t",* (int *)(cpu->memory_handler->memory[i]));
         } else {
-            printf(".\t"); //N'arrive que si la case n'est pas initialisee -> bug
+            printf("X\t"); //N'arrive que si la case n'est pas initialisee -> bug
         }
         
     }
