@@ -7,6 +7,9 @@ MemoryHandler *memory_init(int size) {
     mem->total_size=size;
     mem->memory=malloc(sizeof(void *)*mem->total_size);
     assert(mem->memory);
+    for(int i=0; i<mem->total_size; i++) {
+        mem->memory[i]=NULL;
+    }
     mem->free_list=(Segment *)malloc(sizeof(Segment));
     assert(mem->free_list);
     mem->free_list->size=mem->total_size;

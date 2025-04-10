@@ -103,6 +103,7 @@ void allocate_variables(CPU *cpu, Instruction** data_instructions, int data_coun
         ins=data_instructions[i];
         //On modifiera ça après
         char buffer[100];
+        for(int i=0; i<100; i++) {buffer[i]='\0';} //On initialise le buffer pour eviter le warning de valgrind
         int b = 0;
         for(int j = 0; ins->operand2[j]!='\0'; j++){
             buffer[b] = ins->operand2[j];
