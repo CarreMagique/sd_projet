@@ -503,6 +503,12 @@ int handle_instruction(CPU *cpu, Instruction *instr, void *src, void *dest){
     if(strcmp(instr->mnemonic, "POP") == 0) {
         return handle_POP(cpu, dest);
     }
+    if(strcmp(instr->mnemonic, "ALLOC") == 0) {
+        return alloc_es_segment(cpu);
+    }
+    if(strcmp(instr->mnemonic, "FREE") == 0) {
+        return free_es_segment(cpu);
+    }
     return 1;
 }
 
@@ -564,6 +570,16 @@ int alloc_es_segment(CPU *cpu) {
         return 0;
     }
     return 2;
+}
+int free_es_segment(CPU* cpu){
+    Segment * seg = hashmap_get(cpu->memory_handler->allocated, "ES");
+    for(int i = seg->start; i<seg->start+seg->size; i++){
+        void* data = cpu->memory_handler->memory[i];
+        free(data);
+        cpu->memory_handler->memory[i] = NULL;
+    }
+    remove_segment(cpu->memory_handler, "ES");
+    return 0;
 }
 
 int run_program(CPU *cpu) {

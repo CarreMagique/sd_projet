@@ -72,7 +72,7 @@ int hashmap_remove(HashMap *map, const char *key){
 }
 void hashmap_destroy(HashMap *map){
     for (int i = 0; i < map->size; i++){
-        if(map->table[i].value) {
+        if(map->table[i].value && map->table[i].value!=TOMBSTONE) {
             free(map->table[i].value);
         }
         free(map->table[i].key);
@@ -81,14 +81,3 @@ void hashmap_destroy(HashMap *map){
     free(map);
 }
 
-void hashmap_destroy2(HashMap *map){
-    for (int i = 0; i < map->size; i++){
-        printf("%d\n", i);
-        if(map->table[i].value) {
-            free(map->table[i].value);
-        }
-        free(map->table[i].key);
-    }
-    free(map->table);
-    free(map);
-}

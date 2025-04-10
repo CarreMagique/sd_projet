@@ -1,5 +1,4 @@
 #include "memoryHandler.h"
-#include "hashmap.h"
 
 MemoryHandler *memory_init(int size) {
     MemoryHandler* mem = (MemoryHandler *)malloc(sizeof(MemoryHandler));
@@ -105,6 +104,39 @@ int create_segment(MemoryHandler *handler, const char *name, int start, int size
     return 0;
 }
 
+int remove_segment(MemoryHandler *handler, const char *name) {
+    Segment *seg = hashmap_get(handler->allocated,name);
+    Segment *prec = handler->free_list;
+    Segment *temp=NULL;
+    if(prec==NULL) {
+        handler->free_list=seg;
+        return 0;
+    }
+    while(prec->next) {
+        if(prec->next->start+prec->next->size==seg->start) {
+            prec->next->size+=seg->size;
+            free(seg);
+            return 0;
+        }
+        if(prec->next->start==seg->start+seg->size) {
+            prec->next->start=seg->start;
+            prec->next->size+=seg->size;
+            free(seg);
+            return 0;
+        }
+        if(prec->next->start > seg->start) {
+            temp=prec->next;
+            prec->next=seg;
+            seg->next=temp;
+        }
+    }
+    if(temp==NULL) {
+        free(seg);
+    }
+    hashmap_remove(handler->allocated,name);
+    return 0;
+}
+
 Segment* find_base_fit(MemoryHandler* handler, int size){
     Segment *seg=handler->free_list;
     if(seg==NULL) {
@@ -181,11 +213,6 @@ int find_free_address_strategy(MemoryHandler *handler, int size, int strategy){
             return seg->start;
     }
     return -1;
-}
-
-int remove_segment(MemoryHandler *handler, const char *name) {
-    hashmap_remove(handler->allocated,name);
-    return 0;
 }
 
 void free_segment(Segment *seg) {

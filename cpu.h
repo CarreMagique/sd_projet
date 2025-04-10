@@ -13,7 +13,8 @@ typedef struct {
     HashMap *context ; // Registres (AX, BX, CX, DX)
     HashMap *constant_pool ; // Table de hachage pour stocker les valeurs immédiates
 } CPU;
-
+int free_es_segment(CPU* cpu);
+int alloc_es_segment(CPU *cpu);
 CPU *cpu_init(int memory_size);
 void cpu_destroy(CPU *cpu);
 void* store(MemoryHandler *handler, const char *segment_name,int pos, void *data);
