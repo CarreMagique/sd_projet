@@ -35,7 +35,7 @@ memoryHandler.o : hashmap.o memoryHandler.c memoryHandler.h
 hashmap.o : hashmap.c hashmap.h
 	gcc -Wall -c hashmap.c -ggdb -o hashmap.o
 
-cpu.o : cpu.c cpu.h memoryHandler.o hashmap.o
+cpu.o : cpu.c cpu.h memoryHandler.o hashmap.o parser.o
 	gcc -Wall -c cpu.c -ggdb -o cpu.o
 
 clean:

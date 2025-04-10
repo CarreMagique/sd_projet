@@ -1,8 +1,4 @@
 #include "cpu.h"
-#include "hashmap.h"
-#include "memoryHandler.h"
-#include "parser.h"
-#include <stdlib.h>
 
 CPU *cpu_init(int memory_size) {
     CPU* cpu = (CPU *) malloc(sizeof(CPU));
@@ -57,8 +53,7 @@ CPU *cpu_init(int memory_size) {
 }
 
 void cpu_destroy(CPU *cpu) {
-    Segment *DS = hashmap_get(cpu->memory_handler->allocated, "DS");
-    free_memory_handler(cpu->memory_handler, DS->start+DS->size); //On utilise la taille sinon seg fault
+    free_memory_handler(cpu->memory_handler); //On utilise la taille sinon seg fault
     hashmap_destroy(cpu->context);
     hashmap_destroy(cpu->constant_pool);
     free(cpu);
@@ -69,19 +64,18 @@ void* load(MemoryHandler *handler, const char *segment_name, int pos){
     if(!smg){
         return NULL;
     }
-    if(smg->size<pos){
+    if(smg->start+smg->size<pos || pos>handler->total_size){
         return NULL;
     }
-    void* data = handler->memory[smg->start+pos];
+    void* data = handler->memory[pos];
     return data;
 }
 
 void* store(MemoryHandler *handler, const char *segment_name,int pos, void *data) {
     Segment *seg = hashmap_get(handler->allocated, segment_name);
-    if(seg==NULL) {return NULL;}
-    if(pos>seg->size || pos>handler->total_size) {return NULL;}
-    handler->memory[pos+seg->start]=data;
-
+    if(seg==NULL) { return NULL;}
+    if(pos>seg->size+seg->start || pos>handler->total_size) { return NULL;}
+    handler->memory[pos]=data;
     return data;
 }
 
@@ -108,11 +102,12 @@ void allocate_variables(CPU *cpu, Instruction** data_instructions, int data_coun
         printf("Problème\n");
         return;
     }
-    int c_m = start;
+    int c_m = start; //c_m est la position start+size
     for(int i=0; i<data_count; i++) {
         ins=data_instructions[i];
         //On modifiera ça après
         char buffer[100];
+        for(int i=0; i<100; i++) {buffer[i]='\0';} //On initialise le buffer pour eviter le warning de valgrind
         int b = 0;
         for(int j = 0; ins->operand2[j]!='\0'; j++){
             buffer[b] = ins->operand2[j];
@@ -134,11 +129,15 @@ void allocate_variables(CPU *cpu, Instruction** data_instructions, int data_coun
 
 void print_data_segment(CPU *cpu) {
     Segment *DS = hashmap_get(cpu->memory_handler->allocated, "DS");
+    if(DS==NULL) {
+        printf("DS is NULL\n");
+        return;
+    }
     for(int i=DS->start; i <DS->start+DS->size; i++) {
         if(cpu->memory_handler->memory[i]) {
             printf("%d\t",* (int *)(cpu->memory_handler->memory[i]));
         } else {
-            printf(".\t"); //N'arrive que si la case n'est pas initialisee -> bug
+            printf("X\t"); //N'arrive que si la case n'est pas initialisee -> bug
         }
         
     }
@@ -179,9 +178,11 @@ void *register_addressing(CPU *cpu, const char *operand) {
 
 void *memory_direct_addressing(CPU *cpu, const char *operand) {
     if(matches("^\\[[0-9]*\\]$",operand)) {
+        Segment * seg = (Segment *) (hashmap_get(cpu->memory_handler->allocated, "DS"));
+        int start =  seg->start;
         int data=0;
         sscanf(operand, " %d ", &data);
-        return cpu->memory_handler->memory[data];
+        return cpu->memory_handler->memory[start+data];
     }
     return NULL;
 }
@@ -191,9 +192,11 @@ void *register_indirect_addressing(CPU *cpu, const char*operand) {
         char buffer[3];
         sscanf(operand, "[%s]", buffer);
         buffer[2]='\0'; //sinon seg fault
+        Segment * seg = (Segment *) (hashmap_get(cpu->memory_handler->allocated, "DS"));
+        int start =  seg->start;
         int* index = hashmap_get(cpu->context, buffer);
         if(index!=NULL) {
-            return cpu->memory_handler->memory[*index];
+            return cpu->memory_handler->memory[*index+start];
         }        
         return NULL;
     }
@@ -368,7 +371,7 @@ int search_and_replace ( char ** str , HashMap * values ) {
     // Iterate through all keys in the hashmap
     for ( int i = 0; i < values -> size ; i ++) {
         if ( values -> table [i]. key && values -> table [i]. key != TOMBSTONE) {
-            char * key = values -> table [i]. key ;
+            char * key = values -> table [i]. key;
             int value = * ( int *) values -> table [i]. value ;
             // Find potential substring match
             char * substr = strstr ( input , key ) ;
@@ -461,7 +464,7 @@ void allocate_code_segment(CPU *cpu, Instruction **code_instructions, int code_c
         }
         */
 
-        if(store(cpu->memory_handler, "CS", i, (void*) ins)==NULL) {
+        if(store(cpu->memory_handler, "CS", i, (void*) ins)==NULL) { //Instruction a dupliquer plus tard
             printf("Cannot store code instruction\n");
         }
     }
