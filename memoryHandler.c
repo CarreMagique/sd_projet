@@ -7,7 +7,7 @@ MemoryHandler *memory_init(int size) {
     mem->memory=malloc(sizeof(void *)*mem->total_size);
     assert(mem->memory);
     for(int i=0; i<mem->total_size; i++) {
-        mem->memory[i]=NULL;
+        mem->memory[i]=NULL; //On initialise les valeurs de la mémoire
     }
     mem->free_list=(Segment *)malloc(sizeof(Segment));
     assert(mem->free_list);
@@ -24,8 +24,8 @@ Segment *find_free_segment(MemoryHandler* handler, int start, int size, Segment*
     if(seg==NULL) {
         return NULL;
     }
-    if(seg->start<=start && seg->start+seg->size >= start+size) {
-        *prev=NULL;
+    *prev=NULL; //Valeur par defaut si on ne trouve pas de segment
+    if(seg->start<=start && seg->start+seg->size >= start+size) { //Le premier satisfait les conditions
         return seg;
     }
     while(seg->next) {
@@ -36,7 +36,6 @@ Segment *find_free_segment(MemoryHandler* handler, int start, int size, Segment*
         seg=seg->next;
     }
 
-    *prev=NULL;
     return NULL;
 }
 
@@ -108,6 +107,7 @@ int remove_segment(MemoryHandler *handler, const char *name) {
     Segment *seg = hashmap_get(handler->allocated,name);
     Segment *prec = handler->free_list;
     Segment *temp=NULL;
+    hashmap_remove(handler->allocated,name); //On le supprime maintenant pour eviter d'avoir a traiter chaque cas
     if(prec==NULL) {
         handler->free_list=seg;
         return 0;
@@ -133,7 +133,6 @@ int remove_segment(MemoryHandler *handler, const char *name) {
     if(temp==NULL) {
         free(seg);
     }
-    hashmap_remove(handler->allocated,name);
     return 0;
 }
 
