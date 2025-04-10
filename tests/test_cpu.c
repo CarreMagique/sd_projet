@@ -42,8 +42,9 @@ int main(){
     ParserResult* pr = parse("tests/test_parser.txt");
     allocate_variables(cpu, pr->data_instructions, pr->data_count);
     print_data_segment(cpu);
+    
     cpu_destroy(cpu);
-    free_parser_result(pr);
+
     
     CPU* cpu_test = setup_test_environment();
     print_data_segment(cpu_test);
@@ -72,6 +73,8 @@ int main(){
     handle_MOV(cpu_test,src4,dest4);
     assert(* (int *)dest4==35); //3*10+5
     print_data_segment(cpu_test);
+    free_parser_result(pr);
     cpu_destroy(cpu_test);
+
     return 0;
 }
