@@ -362,7 +362,7 @@ int search_and_replace ( char ** str , HashMap * values ) {
     // Iterate through all keys in the hashmap
     for ( int i = 0; i < values -> size ; i ++) {
         if ( values -> table [i]. key && values -> table [i]. key != TOMBSTONE) {
-            char * key = values -> table [i]. key ;
+            char * key = values -> table [i]. key;
             int value = * ( int *) values -> table [i]. value ;
             // Find potential substring match
             char * substr = strstr ( input , key ) ;
@@ -455,7 +455,7 @@ void allocate_code_segment(CPU *cpu, Instruction **code_instructions, int code_c
         }
         */
 
-        if(store(cpu->memory_handler, "CS", i, (void*) ins)==NULL) {
+        if(store(cpu->memory_handler, "CS", i, (void*) ins)==NULL) { //Instruction a dupliquer plus tard
             printf("Cannot store code instruction\n");
         }
     }

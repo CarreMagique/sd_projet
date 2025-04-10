@@ -33,7 +33,7 @@ Instruction *parse_data_instruction(const char *line, HashMap *memory_locations,
                 ins->mnemonic=strdup(word);
                 int* d =malloc(sizeof(int));
                 *d = data_count+var_count;
-                hashmap_insert(memory_locations,ins->mnemonic,d);
+                hashmap_insert(memory_locations,strdup(ins->mnemonic),d); //Regarder si pas de fuites mémoires
                 free(word);
                 word=(char *)malloc(sizeof(char)*WORD_SIZE);
                 j=0;
