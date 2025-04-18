@@ -598,7 +598,7 @@ int run_program(CPU *cpu) {
         }
     }
 
-    while(ins && fgets(buffer, 5, stdin)) {
+    while(ins && fgets(buffer, 3, stdin)) {
         if(strcmp(buffer, "q")==0) {
             return 1;
         }
