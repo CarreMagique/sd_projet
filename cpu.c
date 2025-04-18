@@ -53,12 +53,12 @@ CPU *cpu_init(int memory_size) {
 }
 
 void cpu_destroy(CPU *cpu) {
-    free_memory_handler(cpu->memory_handler); //On utilise la taille sinon seg fault
+    free_memory_handler(cpu->memory_handler);
     hashmap_destroy(cpu->context);
     hashmap_destroy(cpu->constant_pool);
     free(cpu);
 }
-
+//Retourne la donnee dans le segment segment_name et a la position pos dans la memoire du MemoryHandler
 void* load(MemoryHandler *handler, const char *segment_name, int pos){
     Segment* smg = hashmap_get(handler->allocated, segment_name);
     if(!smg){
@@ -70,7 +70,7 @@ void* load(MemoryHandler *handler, const char *segment_name, int pos){
     void* data = handler->memory[pos];
     return data;
 }
-
+//Stocke la donnee data dans le segment segment_name et a la position pos dans la memoire du MemoryHandler
 void* store(MemoryHandler *handler, const char *segment_name,int pos, void *data) {
     Segment *seg = hashmap_get(handler->allocated, segment_name);
     if(seg==NULL) { return NULL;}
@@ -78,10 +78,11 @@ void* store(MemoryHandler *handler, const char *segment_name,int pos, void *data
     handler->memory[pos]=data;
     return data;
 }
-
+//Alloue les variables de la partie .DATA et stocke les valeurs dans le segment DS
 void allocate_variables(CPU *cpu, Instruction** data_instructions, int data_count) {
     Instruction *ins;
     int size = 0;
+    //On determine la taille necessaire pour creer le segment
     for(int i=0; i<data_count; i++) {
         ins=data_instructions[i];
         for(int j = 0; ins->operand2[j]!='\0'; j++){
@@ -91,7 +92,6 @@ void allocate_variables(CPU *cpu, Instruction** data_instructions, int data_coun
         }
         size = size+1;
     }
-    //On peut pas faire une seule boucle car il faut connaitre la taille du segment avant de l'initialiser
     Segment* seg= (Segment *) hashmap_get(cpu->memory_handler->allocated, "SS");
     int start = 0;
     if(seg) {
@@ -99,34 +99,35 @@ void allocate_variables(CPU *cpu, Instruction** data_instructions, int data_coun
     }
     int res = create_segment(cpu->memory_handler, "DS", start, size);
     if(res == 1){
-        printf("Problème\n");
+        printf("Cannot create segment DS\n");
         return;
     }
-    int c_m = start; //c_m est la position start+size
+    int pos = start; //position start+size
+    int *p=NULL;
     for(int i=0; i<data_count; i++) {
         ins=data_instructions[i];
-        //On modifiera ça après
         char buffer[100];
-        for(int i=0; i<100; i++) {buffer[i]='\0';} //On initialise le buffer pour eviter le warning de valgrind
+        for(int i=0; i<100; i++) {buffer[i]='\0';} //On initialise le buffer
         int b = 0;
         for(int j = 0; ins->operand2[j]!='\0'; j++){
             buffer[b] = ins->operand2[j];
             b++;
             if(ins->operand2[j] == ','){
-                int* p = malloc(sizeof(int));
+                p = malloc(sizeof(int));
                 *p= atoi(buffer);
-                store(cpu->memory_handler, "DS", c_m, (void*) p);
-                c_m++;
+                store(cpu->memory_handler, "DS", pos, (void*) p);
+                pos++;
                 b = 0;
             }
         }
-        int* p = malloc(sizeof(int));
+        //On traite le dernier cas qui n'est pas traite dans la boucle
+        p = malloc(sizeof(int));
         *p= atoi(buffer);
-        store(cpu->memory_handler, "DS", c_m, (void*) p);
-        c_m++;
+        store(cpu->memory_handler, "DS", pos, (void*) p);
+        pos++;
     }
 }
-
+//Affiche les valeurs stcokees dans le segment DS
 void print_data_segment(CPU *cpu) {
     Segment *DS = hashmap_get(cpu->memory_handler->allocated, "DS");
     if(DS==NULL) {
@@ -143,7 +144,7 @@ void print_data_segment(CPU *cpu) {
     }
     printf("\n");
 }
-
+//Retourne si l'expression matche le pattern regex
 int matches(const char * pattern, const char * string) {
     regex_t regex;
     int result = regcomp(&regex, pattern, REG_EXTENDED);
@@ -155,7 +156,7 @@ int matches(const char * pattern, const char * string) {
     regfree(&regex);
     return result == 0;
 }
-
+/*--------------------ADRESSING--------------------*/
 void *immediate_addressing(CPU *cpu, const char *operand) {
     if(matches("^[0-9]*$",operand)) {
         int *data=(int *)malloc(sizeof(int));
@@ -230,6 +231,8 @@ int pop_value(CPU *cpu, int *dest) {
     *dest=*(int *)cpu->memory_handler->memory[*sp];
     return 0;
 }
+
+/*--------------------HANDLE--------------------*/
 
 void handle_MOV(CPU* cpu, void* src, void* dest) {
     /*
@@ -409,7 +412,7 @@ int search_and_replace ( char ** str , HashMap * values ) {
     }
     return replaced;
 }
-
+//Remplace le nom d'une variable par son adresse en memoire dans l'instruction
 int resolve_constants(ParserResult *result) {
     for(int i =0; i<result->code_count; i++) {
         if(result->code_instructions[i]->operand2) {
@@ -422,7 +425,6 @@ int resolve_constants(ParserResult *result) {
             result->code_instructions[i]->operand2[1]=temp;
             result->code_instructions[i]->operand2[2]=']';
             result->code_instructions[i]->operand2[3]='\0';
-            printf("res : %s\n", result->code_instructions[i]->operand2);
         }
     }
     return 0;
@@ -586,8 +588,8 @@ int run_program(CPU *cpu) {
     // Affichage initial
     print_data_segment(cpu);
     printf("Press enter to execute next instruction or 'q' to quit\n");
-    char buffer[5];
-    fgets(buffer, 5, stdin);
+    char buffer[3];
+    fgets(buffer, 3, stdin);
     Instruction *ins=NULL;
     if(strcmp(buffer, "\n")==0) {
         ins = fetch_next_instruction(cpu);

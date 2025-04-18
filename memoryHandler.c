@@ -18,7 +18,7 @@ MemoryHandler *memory_init(int size) {
     mem->allocated=hashmap_create();
     return mem;
 }
-
+//Retourne (s'il existe) un segment libre contenant un segment commencant a start et de taille size
 Segment *find_free_segment(MemoryHandler* handler, int start, int size, Segment** prev) {
     Segment *seg=handler->free_list;
     if(seg==NULL) {
@@ -38,7 +38,10 @@ Segment *find_free_segment(MemoryHandler* handler, int start, int size, Segment*
 
     return NULL;
 }
-
+/*
+Essaye de creer un segment commencant a start et de taille size
+Met a jour la free_list et la hashmap allocated
+*/
 int create_segment(MemoryHandler *handler, const char *name, int start, int size) {
     if(start+size>handler->total_size) { //Dans ce cas le segment est trop large pour etre cree
         return 1;
@@ -102,19 +105,26 @@ int create_segment(MemoryHandler *handler, const char *name, int start, int size
 
     return 0;
 }
-
+//Supprime le segment name alloue et met a jour la free_list
 int remove_segment(MemoryHandler *handler, const char *name) {
     Segment *seg = hashmap_get(handler->allocated,name);
     Segment *prec = handler->free_list;
     Segment *temp=NULL;
-    hashmap_remove(handler->allocated,name); //On le supprime maintenant pour eviter d'avoir a traiter chaque cas
+    hashmap_remove(handler->allocated,name); //On le supprime des maintenant pour eviter d'avoir a traiter chaque cas
     if(prec==NULL) {
         handler->free_list=seg;
         return 0;
     }
+    /*On doit parcourir avec next pour la troisieme situation ou le prochain segment libre n'est pas adjacent*/
     while(prec->next) {
         if(prec->next->start+prec->next->size==seg->start) {
             prec->next->size+=seg->size;
+            /*Si le segment etait entre deux segments libres, on peut juste liberer seg et faire 1 grand segment libre*/
+            if(prec->next->next && prec->next->next->start==prec->next->start+prec->next->size) {
+                prec->next->size+=prec->next->next->size;
+                free(prec->next->next);
+                prec->next->next=prec->next->next->next;
+            }
             free(seg);
             return 0;
         }
@@ -129,13 +139,14 @@ int remove_segment(MemoryHandler *handler, const char *name) {
             prec->next=seg;
             seg->next=temp;
         }
+        prec->next=prec->next->next;
     }
     if(temp==NULL) {
         free(seg);
     }
     return 0;
 }
-
+//Trouve le premier segment libre plus grand ou egal a size
 Segment* find_base_fit(MemoryHandler* handler, int size){
     Segment *seg=handler->free_list;
     if(seg==NULL) {
@@ -153,6 +164,7 @@ Segment* find_base_fit(MemoryHandler* handler, int size){
     return NULL;
 }
 
+//Trouve le segment libre ayant la taille la plus proche de size et superieur ou egal a size
 Segment* find_best_fit(MemoryHandler* handler, int size){
     Segment *seg=handler->free_list;
     if(seg==NULL) {
@@ -170,7 +182,7 @@ Segment* find_best_fit(MemoryHandler* handler, int size){
     }
     return min;
 }
-
+//Trouve le segment libre ayant la plus grande taille et une taille supeieure ou egale a size
 Segment* find_worst_fit(MemoryHandler* handler, int size){
     Segment *seg=handler->free_list;
     if(seg==NULL) {
@@ -188,7 +200,7 @@ Segment* find_worst_fit(MemoryHandler* handler, int size){
     }
     return max;
 }
-
+//Essaye de trouver un segment libre a l'aide d'une des fonctions plus haut
 int find_free_address_strategy(MemoryHandler *handler, int size, int strategy){
     Segment* seg =NULL;
     switch (strategy){
