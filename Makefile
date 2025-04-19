@@ -2,6 +2,10 @@ all : main
 
 tests: test_hashmap test_parser test_memoryHandler test_cpu test_cpu2
 
+performance: hashmap.o memoryHandler.o parser.o cpu.o tests/performances.c
+	gcc -Wall -c tests/performances.c -ggdb -o tests/performances.o
+	gcc -Wall tests/performances.o cpu.o parser.o hashmap.o memoryHandler.o -ggdb -o performances
+
 test_cpu : cpu.o tests/test_cpu.c
 	gcc -Wall -c tests/test_cpu.c -ggdb -o tests/test_cpu.o
 	gcc -Wall tests/test_cpu.o cpu.o parser.o hashmap.o memoryHandler.o -ggdb -o test_cpu
