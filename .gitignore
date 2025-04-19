@@ -5,6 +5,7 @@
 core
 main
 main_hashmap
+performances
 test_hashmap
 test_memoryHandler
 test_parser
