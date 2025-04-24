@@ -115,7 +115,7 @@ int main() {
     f3=fopen("out_parser.txt","w");
     f4=fopen("out_cpu.txt","w");
     printf("Program initialized\n");
-    for(int i=1; i<10; i++) {
+    for(int i=1; i<11; i++) {
         printf("Value : %d\n", i*2000);
         test_hash(f1, i*2000);
         test_memory_handler(f2, i*2000);
@@ -127,6 +127,7 @@ int main() {
     test_parser_and_cpu(f3, f4, "tests/perf_parser2000.txt", 2304);
     test_parser_and_cpu(f3, f4, "tests/perf_parser4000.txt", 4608);
     test_parser_and_cpu(f3, f4, "tests/perf_parser8000.txt", 9216);
+    test_parser_and_cpu(f3, f4, "tests/perf_parser16000.txt", 18432);
     printf("Program ended\n");
     fclose(f1);
     fclose(f2);
