@@ -235,13 +235,6 @@ int pop_value(CPU *cpu, int *dest) {
 /*--------------------HANDLE--------------------*/
 
 void handle_MOV(CPU* cpu, void* src, void* dest) {
-    /*
-    assert(* (int *)src>=0);
-    assert(* (int *)dest>=0);
-    assert(cpu->memory_handler->total_size> *(int *)src);
-    assert(cpu->memory_handler->total_size> *(int *)dest);
-    cpu->memory_handler->memory[* (int *)dest]=cpu->memory_handler->memory[* (int *)src];
-    */
     *(int *)dest=*(int *)src;
 }
 
@@ -446,25 +439,15 @@ void allocate_code_segment(CPU *cpu, Instruction **code_instructions, int code_c
     Instruction *ins=NULL;
     for(int i=0; i<code_count; i++) {
         ins=code_instructions[i];
-        /*
-        int* p = malloc(sizeof(int));
-        assert(p);
-        */
+        
         if(ins->operand2) {
             resolve_addressing(cpu, ins->operand2);
         } else if(ins->operand1) {
             resolve_addressing(cpu, ins->operand1);
         } else {
             printf("Instruction has no operands\n");
-            continue;;
-        }
-        
-        /*
-        if(p==NULL) {
-            printf("Cannot resolve address\n");
             continue;
         }
-        */
 
         if(store(cpu->memory_handler, "CS", i, (void*) ins)==NULL) { //Instruction a dupliquer plus tard
             printf("Cannot store code instruction\n");
