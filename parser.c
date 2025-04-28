@@ -1,4 +1,5 @@
 #include "parser.h"
+#include <string.h>
 #define WORD_SIZE 32
 
 int var_count;
@@ -80,6 +81,8 @@ Instruction *parse_code_instruction(const char *line, HashMap *labels, int code_
                 ins->operand1=strdup(word);
             } else if(word_count>=2) {
                 ins->operand2=strdup(word);
+            } else {
+                ins->mnemonic=strdup(word);
             }
             free(word);
             word=NULL;

@@ -444,9 +444,8 @@ void allocate_code_segment(CPU *cpu, Instruction **code_instructions, int code_c
             resolve_addressing(cpu, ins->operand2);
         } else if(ins->operand1) {
             resolve_addressing(cpu, ins->operand1);
-        } else {
-            printf("Instruction has no operands\n");
-            continue;
+        } else if(ins->mnemonic){
+            resolve_addressing(cpu, ins->mnemonic);
         }
 
         if(store(cpu->memory_handler, "CS", i, (void*) ins)==NULL) { //Instruction a dupliquer plus tard
@@ -501,7 +500,13 @@ int execute_instruction(CPU *cpu, Instruction *instr) {
     if(instr==NULL) {
         return 1;
     }
-    void * src = resolve_addressing(cpu,instr->operand1);
+    void * src = NULL;
+    if(instr->operand1) {
+        src=resolve_addressing(cpu,instr->operand1);
+    } else {
+        src=resolve_addressing(cpu, instr->mnemonic);
+        return handle_instruction(cpu, instr, NULL, NULL);
+    }
     if(src==NULL) {return 1;}
     void * dest = resolve_addressing(cpu,instr->operand2);
     if(dest==NULL) {return 1;}
@@ -516,7 +521,6 @@ Instruction* fetch_next_instruction(CPU *cpu){
     if(*ip>=cpu->memory_handler->total_size || *ip<0) {
         return NULL;
     }
-    /*COMMENT RECUPERER LES INSTRUCTIONS SANS PARSER ?*/
     Instruction* ins = (Instruction *) load(cpu->memory_handler, "CS", *ip);
     
     (*ip)++;
@@ -526,9 +530,11 @@ Instruction* fetch_next_instruction(CPU *cpu){
 
 void* segment_override_addressing(CPU* cpu, const char* operand){
      if(matches("^\\[[C-E]S:[A-D]X\\]$",operand)) {
-        char segment[2];
-        char registre[2];
+        char segment[3];
+        char registre[3];
         sscanf(operand, "[%s:%s]", segment, registre);
+        segment[2]='\0';
+        registre[2]='\0';
         return load(cpu->memory_handler, segment, *(int *)register_addressing(cpu, registre));
      }
      return NULL;
@@ -557,6 +563,7 @@ int alloc_es_segment(CPU *cpu) {
     return 2;
 }
 int free_es_segment(CPU* cpu){
+    printf("here\n");
     Segment * seg = hashmap_get(cpu->memory_handler->allocated, "ES");
     for(int i = seg->start; i<seg->start+seg->size; i++){
         void* data = cpu->memory_handler->memory[i];

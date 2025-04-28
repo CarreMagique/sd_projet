@@ -1,18 +1,22 @@
 all : main
 
-tests: test_hashmap test_parser test_memoryHandler test_cpu test_cpu2
+tests: test_hashmap test_parser test_memoryHandler test_cpu test_cpu2 test_cpu3
 
 performance: hashmap.o memoryHandler.o parser.o cpu.o tests/performances.c
 	gcc -Wall -c tests/performances.c -ggdb -o tests/performances.o
 	gcc -Wall tests/performances.o cpu.o parser.o hashmap.o memoryHandler.o -ggdb -o performances
 
-test_cpu : cpu.o tests/test_cpu.c
+test_cpu : cpu.o parser.o tests/test_cpu.c
 	gcc -Wall -c tests/test_cpu.c -ggdb -o tests/test_cpu.o
 	gcc -Wall tests/test_cpu.o cpu.o parser.o hashmap.o memoryHandler.o -ggdb -o test_cpu
 
-test_cpu2 : cpu.o tests/test_cpu2.c
+test_cpu2 : cpu.o parser.o tests/test_cpu2.c
 	gcc -Wall -c tests/test_cpu2.c -ggdb -o tests/test_cpu2.o
 	gcc -Wall tests/test_cpu2.o cpu.o parser.o hashmap.o memoryHandler.o -ggdb -o test_cpu2
+
+test_cpu3 : cpu.o parser.o tests/test_cpu3.c
+	gcc -Wall -c tests/test_cpu3.c -ggdb -o tests/test_cpu3.o
+	gcc -Wall tests/test_cpu3.o cpu.o parser.o hashmap.o memoryHandler.o -ggdb -o test_cpu3
 
 test_hashmap : hashmap.o tests/test_hashmap.c
 	gcc -Wall -c tests/test_hashmap.c -ggdb -o tests/test_hashmap.o
