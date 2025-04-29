@@ -1,10 +1,11 @@
 .DATA
 x DW 5
 y DB 1
+z DB 2
 .CODE
 MOV AX , x
 MOV BX , y
 ALLOC
-MOV AX , 2
+MOV AX , z
 MOV [ES:AX] , 42
 FREE

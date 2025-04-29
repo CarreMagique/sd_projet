@@ -160,7 +160,7 @@ int matches(const char * pattern, const char * string) {
 void *immediate_addressing(CPU *cpu, const char *operand) {
     if(matches("^[0-9]*$",operand)) {
         int *data=(int *)malloc(sizeof(int));
-        sscanf(operand, " %d ", data);
+        sscanf(operand, "%d", data);
         if(hashmap_get(cpu->constant_pool, operand)==NULL) {
             hashmap_insert(cpu->constant_pool, operand, data);
         }
@@ -182,7 +182,7 @@ void *memory_direct_addressing(CPU *cpu, const char *operand) {
         Segment * seg = (Segment *) (hashmap_get(cpu->memory_handler->allocated, "DS"));
         int start =  seg->start;
         int data=0;
-        sscanf(operand, " %d ", &data);
+        sscanf(operand, "[%d]", &data);
         return cpu->memory_handler->memory[start+data];
     }
     return NULL;
@@ -200,6 +200,46 @@ void *register_indirect_addressing(CPU *cpu, const char*operand) {
             return cpu->memory_handler->memory[*index+start];
         }        
         return NULL;
+    }
+    return NULL;
+}
+
+void* segment_override_addressing(CPU* cpu, const char* operand){
+    if(matches("^\\[[C-E]S:[A-D]X\\]$",operand)) {
+       char segment[3];
+       char registre[3];
+       //sscanf(operand, "[%s:%s]", segment, registre);
+       segment[0]=operand[1];
+       segment[1]=operand[2];
+       segment[2]='\0';
+       registre[0]=operand[4];
+       registre[1]=operand[5];
+       registre[2]='\0';
+       return load(cpu->memory_handler, segment, *(int *)register_addressing(cpu, registre));
+    }
+    return NULL;
+}
+
+void *resolve_addressing(CPU *cpu, const char *operand){
+    void* res = immediate_addressing(cpu, operand);
+    if(res){
+        return res;
+    }
+    res = register_indirect_addressing(cpu,operand);
+    if(res){
+        return res;
+    }
+    res = memory_direct_addressing(cpu, operand);
+    if(res){
+        return res;
+    }
+    res = register_addressing(cpu, operand) ;
+    if(res){
+        return res;
+    }
+    res = segment_override_addressing(cpu, operand);
+    if(res){
+        return res;
     }
     return NULL;
 }
@@ -234,12 +274,16 @@ int pop_value(CPU *cpu, int *dest) {
 
 /*--------------------HANDLE--------------------*/
 
-void handle_MOV(CPU* cpu, void* src, void* dest) {
+int handle_MOV(CPU* cpu, void* src, void* dest) {
+    if(src==NULL || dest==NULL) {return 1;}
     *(int *)dest=*(int *)src;
+    return 0;
 }
 
-void handle_ADD(CPU* cpu, void* src, void* dest){
+int handle_ADD(CPU* cpu, void* src, void* dest){
+    if(src==NULL || dest==NULL) {return 1;}
     *(int *)dest=*(int *)src+*(int *)dest;
+    return 0;
 }
 
 int handle_CMP(CPU* cpu, void* src, void* dest){
@@ -260,7 +304,7 @@ int handle_CMP(CPU* cpu, void* src, void* dest){
 
 int handle_JMP(CPU* cpu, void* src, void* dest){
     int * ip = (int *)hashmap_get(cpu->context, "IP");
-    if(ip==NULL) {
+    if(ip==NULL || dest==NULL) {
         return 1;
     }
     *ip = *(int*)dest;
@@ -324,28 +368,41 @@ int handle_POP(CPU* cpu, void* dest) {
     return pop_value(cpu, dest);
 }
 
-void *resolve_addressing(CPU *cpu, const char *operand){
-    void* res = immediate_addressing(cpu, operand);
-    if(res){
-        return res;
+int handle_instruction(CPU *cpu, Instruction *instr, void *src, void *dest){
+    if(strcmp(instr->mnemonic, "MOV") == 0){
+        return handle_MOV(cpu, src, dest);
     }
-    res = register_indirect_addressing(cpu,operand);
-    if(res){
-        return res;
+    if(strcmp(instr->mnemonic, "ADD") == 0){
+        return handle_ADD(cpu, src, dest);
     }
-    res = memory_direct_addressing(cpu, operand);
-    if(res){
-        return res;
+    if(strcmp(instr->mnemonic, "CMP") == 0){
+        return handle_CMP(cpu, src, dest);
     }
-    res = register_addressing(cpu, operand) ;
-    if(res){
-        return res;
+    if(strcmp(instr->mnemonic, "JMP") == 0){
+        return handle_JMP(cpu, src, dest);
     }
-    res = segment_override_addressing(cpu, operand);
-    if(res){
-        return res;
+    if(strcmp(instr->mnemonic, "JZ") == 0){
+        return handle_JZ(cpu, src, dest);
     }
-    return NULL;
+    if(strcmp(instr->mnemonic, "JNZ") == 0){
+        return handle_JNZ(cpu, src, dest);
+    }
+    if(strcmp(instr->mnemonic, "HALT") == 0) {
+        return handle_HALT(cpu, src, dest);
+    }
+    if(strcmp(instr->mnemonic, "PUSH") == 0){
+        return handle_PUSH(cpu, src);
+    }
+    if(strcmp(instr->mnemonic, "POP") == 0) {
+        return handle_POP(cpu, dest);
+    }
+    if(strcmp(instr->mnemonic, "ALLOC") == 0) {
+        return alloc_es_segment(cpu);
+    }
+    if(strcmp(instr->mnemonic, "FREE") == 0) {
+        return free_es_segment(cpu);
+    }
+    return 1;
 }
 
 char * trim ( char * str ) {
@@ -418,6 +475,16 @@ int resolve_constants(ParserResult *result) {
             result->code_instructions[i]->operand2[1]=temp;
             result->code_instructions[i]->operand2[2]=']';
             result->code_instructions[i]->operand2[3]='\0';
+        } else if (result->code_instructions[i]->operand1) {
+            search_and_replace(&(result->code_instructions[i]->operand1), result->labels);
+            // On transforme la valeur "i" en "[i]"
+            char temp = * result->code_instructions[i]->operand1;
+            free(result->code_instructions[i]->operand1);
+            result->code_instructions[i]->operand1=(char *) malloc(sizeof(char)*4);
+            result->code_instructions[i]->operand1[0]='[';
+            result->code_instructions[i]->operand1[1]=temp;
+            result->code_instructions[i]->operand1[2]=']';
+            result->code_instructions[i]->operand1[3]='\0';
         }
     }
     return 0;
@@ -457,59 +524,20 @@ void allocate_code_segment(CPU *cpu, Instruction **code_instructions, int code_c
     *ip=0;
 }
 
-int handle_instruction(CPU *cpu, Instruction *instr, void *src, void *dest){
-    if(strcmp(instr->mnemonic, "MOV") == 0){
-        handle_MOV(cpu, src, dest);
-        return 0;
-    }
-    if(strcmp(instr->mnemonic, "ADD") == 0){
-        handle_ADD(cpu, src, dest);
-        return 0;
-    }
-    if(strcmp(instr->mnemonic, "CMP") == 0){
-        return handle_CMP(cpu, src, dest);
-    }
-    if(strcmp(instr->mnemonic, "JMP") == 0){
-        return handle_JMP(cpu, src, dest);
-    }
-    if(strcmp(instr->mnemonic, "JZ") == 0){
-        return handle_JZ(cpu, src, dest);
-    }
-    if(strcmp(instr->mnemonic, "JNZ") == 0){
-        return handle_JNZ(cpu, src, dest);
-    }
-    if(strcmp(instr->mnemonic, "HALT") == 0) {
-        return handle_HALT(cpu, src, dest);
-    }
-    if(strcmp(instr->mnemonic, "PUSH") == 0){
-        return handle_PUSH(cpu, src);
-    }
-    if(strcmp(instr->mnemonic, "POP") == 0) {
-        return handle_POP(cpu, dest);
-    }
-    if(strcmp(instr->mnemonic, "ALLOC") == 0) {
-        return alloc_es_segment(cpu);
-    }
-    if(strcmp(instr->mnemonic, "FREE") == 0) {
-        return free_es_segment(cpu);
-    }
-    return 1;
-}
-
 int execute_instruction(CPU *cpu, Instruction *instr) {
     if(instr==NULL) {
         return 1;
     }
+    void * dest = NULL;
     void * src = NULL;
-    if(instr->operand1) {
-        src=resolve_addressing(cpu,instr->operand1);
-    } else {
-        src=resolve_addressing(cpu, instr->mnemonic);
-        return handle_instruction(cpu, instr, NULL, NULL);
+    if(instr->operand1==NULL) {
+        dest=resolve_addressing(cpu, instr->mnemonic);
+        return handle_instruction(cpu, instr, src, dest);
     }
-    if(src==NULL) {return 1;}
-    void * dest = resolve_addressing(cpu,instr->operand2);
-    if(dest==NULL) {return 1;}
+    dest=resolve_addressing(cpu,instr->operand1);    
+    if(instr->operand2) {
+        src = resolve_addressing(cpu,instr->operand2);
+    }
     return handle_instruction(cpu, instr, src, dest);
 }
 
@@ -527,19 +555,6 @@ Instruction* fetch_next_instruction(CPU *cpu){
     return ins;
 }
 
-
-void* segment_override_addressing(CPU* cpu, const char* operand){
-     if(matches("^\\[[C-E]S:[A-D]X\\]$",operand)) {
-        char segment[3];
-        char registre[3];
-        sscanf(operand, "[%s:%s]", segment, registre);
-        segment[2]='\0';
-        registre[2]='\0';
-        return load(cpu->memory_handler, segment, *(int *)register_addressing(cpu, registre));
-     }
-     return NULL;
-}
-
 int alloc_es_segment(CPU *cpu) {
     int seg_size = * (int *) hashmap_get(cpu->context, "AX");
     int strategy = * (int *) hashmap_get(cpu->context, "BX");
@@ -552,10 +567,13 @@ int alloc_es_segment(CPU *cpu) {
         *zf=0;
         if (create_segment(cpu->memory_handler, "ES", res, seg_size)!=0) {
             printf("Cannot create ES\n");
+            return 3;
         }
         Segment *seg = (Segment *) hashmap_get(cpu->memory_handler->allocated, "ES");
         for(int i=seg->start; i<seg->start+seg->size; i++) {
-            *(int *)(cpu->memory_handler->memory[i])=0;
+            int *val = malloc(sizeof(int));
+            *val=0;
+            (cpu->memory_handler->memory[i])=val;
         }
         *(int *) hashmap_get(cpu->context, "ES") = seg->start;
         return 0;
@@ -563,7 +581,6 @@ int alloc_es_segment(CPU *cpu) {
     return 2;
 }
 int free_es_segment(CPU* cpu){
-    printf("here\n");
     Segment * seg = hashmap_get(cpu->memory_handler->allocated, "ES");
     for(int i = seg->start; i<seg->start+seg->size; i++){
         void* data = cpu->memory_handler->memory[i];
@@ -583,6 +600,7 @@ int run_program(CPU *cpu) {
     Instruction *ins=NULL;
     if(strcmp(buffer, "\n")==0) {
         ins = fetch_next_instruction(cpu);
+        if(ins==NULL) {return 0;}
         if(execute_instruction(cpu, ins)!=0) {
             printf("Cannot execute instruction\n");
         }
@@ -595,9 +613,11 @@ int run_program(CPU *cpu) {
         
         if(strcmp(buffer, "\n")==0) {
             ins = fetch_next_instruction(cpu);
+            if(ins==NULL) {break;}
             if(execute_instruction(cpu, ins)!=0) {
                 printf("Cannot execute instruction\n");
             }
+            printf("%s\n", ins->mnemonic);
         }
     }
 

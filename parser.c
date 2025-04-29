@@ -16,10 +16,10 @@ Instruction *parse_data_instruction(const char *line, HashMap *memory_locations,
     ins->operand2=NULL;
 
     while(line[i]) {
-        if(line[i]!=' ' && line[i]!='\n') { //Si line verifie cela, alors le caractere fait partie d'un mot
+        if(line[i]!=' ' && line[i]!='\n' && line[i]!='\0') { //Si line verifie cela, alors le caractere fait partie d'un mot
             word[j]=line[i];
             j++;
-        }else if(line[i]=='\n') { //On arrive a la fin de la ligne
+        }else if(line[i]=='\n' || line[i]=='\0') { //On arrive a la fin de la ligne
             word[j]='\0';
             if(word_count==1) {
                 ins->operand1=strdup(word);
@@ -72,10 +72,10 @@ Instruction *parse_code_instruction(const char *line, HashMap *labels, int code_
     ins->operand2=NULL;
 
     while(line[i]) {
-        if(line[i]!=' ' && line[i] != ',' && line[i]!='\n') { //Dans ce cas les virgules sont aussi a ignorer
+        if(line[i]!=' ' && line[i] != ',' && line[i]!='\n' && line[i]!='\0') { //Dans ce cas les virgules sont aussi a ignorer
             word[j]=line[i];
             j++;
-        }else if(line[i]=='\n') {
+        }else if(line[i]=='\n' || line[i]=='\0') {
             word[j]='\0';
             if(word_count==1) {
                 ins->operand1=strdup(word);
@@ -118,8 +118,10 @@ Instruction *parse_code_instruction(const char *line, HashMap *labels, int code_
         word[j]='\0';
         if(word_count==1) {
             ins->operand1=strdup(word);
-        } else {   
+        } else if(word_count==2) {   
             ins->operand2=strdup(word);
+        } else {
+            ins->mnemonic=strdup(word);
         }
     }
     if(word) {free(word);}
