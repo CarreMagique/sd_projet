@@ -138,10 +138,11 @@ int remove_segment(MemoryHandler *handler, const char *name) {
             temp=prec->next;
             prec->next=seg;
             seg->next=temp;
+            break;
         }
         prec->next=prec->next->next;
     }
-    if(temp==NULL) {
+    if(temp==NULL || seg->next==NULL) {
         free(seg);
     }
     return 0;

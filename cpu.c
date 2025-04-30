@@ -178,18 +178,11 @@ void *register_addressing(CPU *cpu, const char *operand) {
 }
 
 void *memory_direct_addressing(CPU *cpu, const char *operand) {
-    printf("%s\n", operand);
     if(matches("^\\[[0-9]*\\]$",operand)) {
-        printf("marsala rentre\n");
         Segment * seg = (Segment *) (hashmap_get(cpu->memory_handler->allocated, "DS"));
         int start =  seg->start;
         int data=0;
         sscanf(operand, "[%d]", &data);
-        printf("marsala position %d\n", start+data);
-        if(start+data==132){
-            data = data-1;
-            print_data_segment(cpu);
-        }
         return cpu->memory_handler->memory[start+data];
     }
     return NULL;
@@ -199,7 +192,7 @@ void *register_indirect_addressing(CPU *cpu, const char*operand) {
     if(matches("^\\[[A-D]X\\]$",operand)) {
         char buffer[3];
         sscanf(operand, "[%s]", buffer);
-        buffer[2]='\0'; //sinon seg fault
+        buffer[2]='\0';
         Segment * seg = (Segment *) (hashmap_get(cpu->memory_handler->allocated, "DS"));
         int start =  seg->start;
         int* index = hashmap_get(cpu->context, buffer);
@@ -222,8 +215,8 @@ void* segment_override_addressing(CPU* cpu, const char* operand){
        registre[1]=operand[5];
        registre[2]='\0';
        int pos = *(int *)register_addressing(cpu, registre);
-       int* start = hashmap_get(cpu->context, "ES");
-       return load(cpu->memory_handler, segment, *start+pos);
+       int start = * (int *) hashmap_get(cpu->context, "ES");
+       return load(cpu->memory_handler, segment, start+pos);
     }
     return NULL;
 }
@@ -249,7 +242,6 @@ void *resolve_addressing(CPU *cpu, const char *operand){
     if(res){
         return res;
     }
-    printf("hello marsala\n");
     return NULL;
 }
 
@@ -475,25 +467,29 @@ int search_and_replace ( char ** str , HashMap * values ) {
 int resolve_constants(ParserResult *result) {
     for(int i =0; i<result->code_count; i++) {
         if(result->code_instructions[i]->operand2) {
-            search_and_replace(&(result->code_instructions[i]->operand2), result->memory_locations);
+            int res =search_and_replace(&(result->code_instructions[i]->operand2), result->memory_locations);
+            if(res==0) {continue;}
             // On transforme la valeur "i" en "[i]"
-            char temp = * result->code_instructions[i]->operand2;
+            char * temp = strdup(result->code_instructions[i]->operand2);
             free(result->code_instructions[i]->operand2);
-            result->code_instructions[i]->operand2=(char *) malloc(sizeof(char)*4);
+            result->code_instructions[i]->operand2=(char *) malloc(sizeof(char)*2);
             result->code_instructions[i]->operand2[0]='[';
-            result->code_instructions[i]->operand2[1]=temp;
-            result->code_instructions[i]->operand2[2]=']';
-            result->code_instructions[i]->operand2[3]='\0';
+            result->code_instructions[i]->operand2[1]='\0';
+            strcat(result->code_instructions[i]->operand2, temp);
+            strcat(result->code_instructions[i]->operand2, "]");
+            free(temp);
         } else if (result->code_instructions[i]->operand1) {
-            search_and_replace(&(result->code_instructions[i]->operand1), result->labels);
+            int res = search_and_replace(&(result->code_instructions[i]->operand1), result->labels);
+            if(res==0) {continue;}
             // On transforme la valeur "i" en "[i]"
-            char temp = * result->code_instructions[i]->operand1;
+            char * temp = strdup(result->code_instructions[i]->operand1);
             free(result->code_instructions[i]->operand1);
-            result->code_instructions[i]->operand1=(char *) malloc(sizeof(char)*4);
+            result->code_instructions[i]->operand1=(char *) malloc(sizeof(char)*2);
             result->code_instructions[i]->operand1[0]='[';
-            result->code_instructions[i]->operand1[1]=temp;
-            result->code_instructions[i]->operand1[2]=']';
-            result->code_instructions[i]->operand1[3]='\0';
+            result->code_instructions[i]->operand1[1]='\0';
+            strcat(result->code_instructions[i]->operand1, temp);
+            strcat(result->code_instructions[i]->operand1, "]");
+            free(temp);
         }
     }
     return 0;
@@ -539,19 +535,13 @@ int execute_instruction(CPU *cpu, Instruction *instr) {
     }
     void * dest = NULL;
     void * src = NULL;
-    printf("%s %s\n", instr->operand1, instr->operand2);
     if(instr->operand1==NULL) {
         dest=resolve_addressing(cpu, instr->mnemonic);
         return handle_instruction(cpu, instr, src, dest);
     }
-    printf("coucou marsala\n");
     dest=resolve_addressing(cpu,instr->operand1);
     if(instr->operand2) {
-        if(resolve_addressing(cpu,instr->operand2)==NULL){
-            printf("coucou2 marsala %s\n", instr->operand2);
-        }
         src = resolve_addressing(cpu,instr->operand2);
-
     }
     return handle_instruction(cpu, instr, src, dest);
 }
@@ -633,7 +623,6 @@ int run_program(CPU *cpu) {
             if(execute_instruction(cpu, ins)!=0) {
                 printf("Cannot execute instruction\n");
             }
-            printf("%s\n", ins->mnemonic);
         }
     }
 
