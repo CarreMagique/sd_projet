@@ -178,11 +178,18 @@ void *register_addressing(CPU *cpu, const char *operand) {
 }
 
 void *memory_direct_addressing(CPU *cpu, const char *operand) {
+    printf("%s\n", operand);
     if(matches("^\\[[0-9]*\\]$",operand)) {
+        printf("marsala rentre\n");
         Segment * seg = (Segment *) (hashmap_get(cpu->memory_handler->allocated, "DS"));
         int start =  seg->start;
         int data=0;
         sscanf(operand, "[%d]", &data);
+        printf("marsala position %d\n", start+data);
+        if(start+data==132){
+            data = data-1;
+            print_data_segment(cpu);
+        }
         return cpu->memory_handler->memory[start+data];
     }
     return NULL;
@@ -214,10 +221,9 @@ void* segment_override_addressing(CPU* cpu, const char* operand){
        registre[0]=operand[4];
        registre[1]=operand[5];
        registre[2]='\0';
-       printf("%s %s\n", segment, registre);
        int pos = *(int *)register_addressing(cpu, registre);
-       printf("%d\n", pos);
-       return load(cpu->memory_handler, segment, pos);
+       int* start = hashmap_get(cpu->context, "ES");
+       return load(cpu->memory_handler, segment, *start+pos);
     }
     return NULL;
 }
@@ -243,6 +249,7 @@ void *resolve_addressing(CPU *cpu, const char *operand){
     if(res){
         return res;
     }
+    printf("hello marsala\n");
     return NULL;
 }
 
@@ -532,15 +539,20 @@ int execute_instruction(CPU *cpu, Instruction *instr) {
     }
     void * dest = NULL;
     void * src = NULL;
+    printf("%s %s\n", instr->operand1, instr->operand2);
     if(instr->operand1==NULL) {
         dest=resolve_addressing(cpu, instr->mnemonic);
         return handle_instruction(cpu, instr, src, dest);
     }
+    printf("coucou marsala\n");
     dest=resolve_addressing(cpu,instr->operand1);
     if(instr->operand2) {
+        if(resolve_addressing(cpu,instr->operand2)==NULL){
+            printf("coucou2 marsala %s\n", instr->operand2);
+        }
         src = resolve_addressing(cpu,instr->operand2);
+
     }
-    printf("%s %s\n", instr->operand1, instr->operand2);
     return handle_instruction(cpu, instr, src, dest);
 }
 
