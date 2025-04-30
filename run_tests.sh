@@ -4,3 +4,4 @@ make tests
 ./test_parser
 ./test_cpu
 ./test_cpu2
+./test_cpu3
