@@ -11,6 +11,9 @@ int main(){
     resolve_constants(pr);
     allocate_code_segment(cpu, pr->code_instructions, pr->code_count);
     run_program(cpu);
+    int ax = * (int *) hashmap_get(cpu->context, "AX");
+    assert(ax==52);
+    free_parser_result(pr);
     cpu_destroy(cpu);
     return 0;
 }

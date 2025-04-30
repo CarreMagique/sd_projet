@@ -205,17 +205,19 @@ void *register_indirect_addressing(CPU *cpu, const char*operand) {
 }
 
 void* segment_override_addressing(CPU* cpu, const char* operand){
-    if(matches("^\\[[C-E]S:[A-D]X\\]$",operand)) {
+    if(matches("^\\[([C-E]|S)S:[A-D]X\\]$",operand)) {
        char segment[3];
        char registre[3];
-       //sscanf(operand, "[%s:%s]", segment, registre);
        segment[0]=operand[1];
        segment[1]=operand[2];
        segment[2]='\0';
        registre[0]=operand[4];
        registre[1]=operand[5];
        registre[2]='\0';
-       return load(cpu->memory_handler, segment, *(int *)register_addressing(cpu, registre));
+       printf("%s %s\n", segment, registre);
+       int pos = *(int *)register_addressing(cpu, registre);
+       printf("%d\n", pos);
+       return load(cpu->memory_handler, segment, pos);
     }
     return NULL;
 }
@@ -275,7 +277,7 @@ int pop_value(CPU *cpu, int *dest) {
 /*--------------------HANDLE--------------------*/
 
 int handle_MOV(CPU* cpu, void* src, void* dest) {
-    if(src==NULL || dest==NULL) {return 1;}
+    if(src==NULL || dest==NULL) { return 1;}
     *(int *)dest=*(int *)src;
     return 0;
 }
@@ -534,10 +536,11 @@ int execute_instruction(CPU *cpu, Instruction *instr) {
         dest=resolve_addressing(cpu, instr->mnemonic);
         return handle_instruction(cpu, instr, src, dest);
     }
-    dest=resolve_addressing(cpu,instr->operand1);    
+    dest=resolve_addressing(cpu,instr->operand1);
     if(instr->operand2) {
         src = resolve_addressing(cpu,instr->operand2);
     }
+    printf("%s %s\n", instr->operand1, instr->operand2);
     return handle_instruction(cpu, instr, src, dest);
 }
 
@@ -573,9 +576,10 @@ int alloc_es_segment(CPU *cpu) {
         for(int i=seg->start; i<seg->start+seg->size; i++) {
             int *val = malloc(sizeof(int));
             *val=0;
-            (cpu->memory_handler->memory[i])=val;
+            cpu->memory_handler->memory[i]=val;
         }
-        *(int *) hashmap_get(cpu->context, "ES") = seg->start;
+        int * es = (int *) hashmap_get(cpu->context, "ES"); 
+        * es = seg->start;
         return 0;
     }
     return 2;
