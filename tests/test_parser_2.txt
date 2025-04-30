@@ -1,9 +1,0 @@
-.DATA
-X DW 3
-Y DB 4
-arr DB 5 ,6 ,7 ,8
-z DB 9
-.CODE
-start: MOV AX , x
-loop: ADD AX , y
-JMP loop
